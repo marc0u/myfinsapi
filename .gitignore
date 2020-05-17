@@ -1,0 +1,4 @@
+Icon*
+*.sqlite
+*.ffs_db
+/old
