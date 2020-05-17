@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"godrive/apifinances/api/models"
+	"gitlab.com/marco.urriola/apifinances/api/models"
 
 	"github.com/gofiber/fiber"
 

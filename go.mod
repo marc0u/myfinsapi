@@ -1,4 +1,4 @@
-module godrive/apifinances
+module gitlab.com/marco.urriola/apifinances
 
 go 1.14
 

@@ -3,7 +3,7 @@ package seed
 import (
 	"log"
 
-	"godrive/apifinances/api/models"
+	"gitlab.com/marco.urriola/apifinances/api/models"
 
 	"github.com/jinzhu/gorm"
 )

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"godrive/apifinances/api"
+	"gitlab.com/marco.urriola/apifinances/api"
 )
 
 func main() {

@@ -8,9 +8,9 @@ import (
 	// "net/http"
 	// "strconv"
 
-	// "godrive/apifinances/api/models"
-	// "godrive/apifinances/api/responses"
-	// "godrive/apifinances/api/utils/formaterror"
+	// "gitlab.com/marco.urriola/apifinances/api/models"
+	// "gitlab.com/marco.urriola/apifinances/api/responses"
+	// "gitlab.com/marco.urriola/apifinances/api/utils/formaterror"
 
 	"github.com/gofiber/fiber"
 	// "github.com/gorilla/mux"

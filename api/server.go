@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"godrive/apifinances/api/controllers"
-	"godrive/apifinances/api/seed"
+	"gitlab.com/marco.urriola/apifinances/api/controllers"
+	"gitlab.com/marco.urriola/apifinances/api/seed"
 
 	"github.com/joho/godotenv"
 )
