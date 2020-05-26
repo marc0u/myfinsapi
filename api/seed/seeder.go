@@ -44,10 +44,10 @@ func Load(db *gorm.DB) {
 	if err != nil {
 		log.Fatalf("cannot migrate table: %v", err)
 	}
-	// for i, _ := range incomes {
-	// 	err = db.Debug().Model(&models.Income{}).Create(&incomes[i]).Error
-	// 	if err != nil {
-	// 		log.Fatalf("cannot seed posts table: %v", err)
-	// 	}
-	// }
+	for i, _ := range incomes {
+		err = db.Debug().Model(&models.Income{}).Create(&incomes[i]).Error
+		if err != nil {
+			log.Fatalf("cannot seed posts table: %v", err)
+		}
+	}
 }

@@ -29,15 +29,6 @@ func (i *Income) Prepare() {
 	i.MadeBy = html.EscapeString(strings.Title(strings.TrimSpace(i.MadeBy)))
 }
 
-func (i *Income) PrepareUpdate(income *Income) {
-	i.ID = income.ID
-	i.DateTime = income.DateTime
-	i.Detail = html.EscapeString(strings.TrimSpace(i.Detail))
-	i.Category = html.EscapeString(strings.ToUpper(strings.TrimSpace(i.Category)))
-	i.PaymentMethod = html.EscapeString(strings.ToUpper(strings.TrimSpace(i.PaymentMethod)))
-	i.MadeBy = html.EscapeString(strings.ToUpper(strings.TrimSpace(i.MadeBy)))
-}
-
 func (i *Income) Validate() error {
 	if i.Amount < 1 {
 		return errors.New("Amount field is required.")
@@ -78,35 +69,35 @@ func (i *Income) SaveIncome(db *gorm.DB) (*Income, error) {
 	return i, nil
 }
 
-func (i *Income) FindAllIncomes(db *gorm.DB, uid uint32) (*[]Income, error) {
+func (i *Income) FindAllIncomes(db *gorm.DB) (*[]Income, error) {
 	var err error
 	incomes := []Income{}
-	err = db.Debug().Model(&Income{}).Limit(100).Where("user_id = ?", uid).Find(&incomes).Error
+	err = db.Debug().Model(&Income{}).Limit(100).Find(&incomes).Error
 	if err != nil {
 		return &[]Income{}, err
 	}
 	return &incomes, nil
 }
 
-func (i *Income) FindIncomeByID(db *gorm.DB, id uint32, uid uint32) (*Income, error) {
+func (i *Income) FindIncomeByID(db *gorm.DB, id uint64) (*Income, error) {
 	var err error
-	err = db.Debug().Model(&Income{}).Where("id = ? and user_id = ?", id, uid).Take(&i).Error
+	err = db.Debug().Model(&Income{}).Where("id = ?", id).Take(&i).Error
 	if err != nil {
 		return &Income{}, err
 	}
 	return i, nil
 }
 
-func (i *Income) UpdateAIncome(db *gorm.DB) (*Income, error) {
+func (i *Income) UpdateAIncome(db *gorm.DB, id uint64) (*Income, error) {
 	var err error
-	err = db.Debug().Model(&Income{}).Where("id = ?", i.ID).Updates(Income{Amount: i.Amount, Detail: i.Detail, Category: i.Category, PaymentMethod: i.PaymentMethod, MadeBy: i.MadeBy}).Error
+	err = db.Debug().Model(&Income{}).Where("id = ?", id).Updates(&i, true).Error
 	if err != nil {
 		return &Income{}, err
 	}
 	return i, nil
 }
 
-func (i *Income) DeleteAIncome(db *gorm.DB, id uint32) (int64, error) {
+func (i *Income) DeleteAIncome(db *gorm.DB, id uint64) (int64, error) {
 	db = db.Debug().Model(&Income{}).Where("id = ?", id).Take(&Income{}).Delete(&Income{})
 	if db.Error != nil {
 		if gorm.IsRecordNotFoundError(db.Error) {
