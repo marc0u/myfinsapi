@@ -8,44 +8,54 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-var incomes = []models.Income{
-	models.Income{
+var transactions = []models.Transaction{
+	models.Transaction{
 		Amount:        111,
-		Detail:        "First income April",
+		Type:          "income",
+		DetailOrigin:  "First transaction April",
 		Category:      "Test Category",
-		PaymentMethod: "sc",
+		Method:        "debit",
+		Bank:          "scotiabank",
+		AccountNumber: "000-000-000",
 		MadeBy:        "marco",
 	},
-	models.Income{
+	models.Transaction{
 		Amount:        222,
-		Detail:        "Second income April",
+		Type:          "expense",
+		DetailOrigin:  "Second transaction April",
 		Category:      "Test Category",
-		PaymentMethod: "sc",
+		Method:        "debit",
+		Bank:          "falabella",
+		AccountNumber: "000-000-000",
 		MadeBy:        "marco",
 	},
-	models.Income{
-		Amount:        111,
-		Detail:        "First income April",
+	models.Transaction{
+		Amount:        333,
+		Type:          "income",
+		DetailOrigin:  "Third transaction April",
 		Category:      "Test Category",
-		PaymentMethod: "sc",
+		Method:        "transfer",
+		Bank:          "scotiabank",
+		AccountNumber: "000-000-000",
 		MadeBy:        "marco",
 	},
-	models.Income{
-		Amount:        222,
-		Detail:        "Second income April",
-		Category:      "Test Category",
-		PaymentMethod: "sc",
-		MadeBy:        "marco",
+	models.Transaction{
+		Amount:       444,
+		Type:         "income",
+		DetailOrigin: "Fourth transaction April",
+		Category:     "Test Category",
+		Method:       "cash",
+		MadeBy:       "marco",
 	},
 }
 
 func Load(db *gorm.DB) {
-	err := db.Debug().AutoMigrate(&models.Income{}).Error
+	err := db.Debug().AutoMigrate(&models.Transaction{}).Error
 	if err != nil {
 		log.Fatalf("cannot migrate table: %v", err)
 	}
-	for i, _ := range incomes {
-		err = db.Debug().Model(&models.Income{}).Create(&incomes[i]).Error
+	for i, _ := range transactions {
+		err = db.Debug().Model(&models.Transaction{}).Create(&transactions[i]).Error
 		if err != nil {
 			log.Fatalf("cannot seed posts table: %v", err)
 		}

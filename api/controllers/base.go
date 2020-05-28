@@ -52,7 +52,7 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, D
 		}
 		server.DB.Exec("PRAGMA foreign_keys = ON")
 	}
-	server.DB.Debug().AutoMigrate(&models.Income{}) //database migration
+	server.DB.Debug().AutoMigrate(&models.Transaction{}) //database migration
 	server.Router = fiber.New()
 	server.initializeRoutes()
 }

@@ -1,24 +1,16 @@
 package controllers
 
 import (
-	// "encoding/json"
-	// "errors"
-	// "fmt"
-	// "io/ioutil"
-	// "net/http"
 	"strconv"
 
 	"gitlab.com/marco.urriola/apifinances/api/models"
-	// "gitlab.com/marco.urriola/apifinances/api/responses"
-	// "gitlab.com/marco.urriola/apifinances/api/utils/formaterror"
 
 	"github.com/gofiber/fiber"
-	// "github.com/gorilla/mux"
 )
 
-func (server *Server) CreateIncome(c *fiber.Ctx) {
+func (server *Server) CreateTransaction(c *fiber.Ctx) {
 	// Reading body http request
-	item := models.Income{}
+	item := models.Transaction{}
 	err := c.BodyParser(&item)
 	if err != nil {
 		c.Status(400)
@@ -32,7 +24,7 @@ func (server *Server) CreateIncome(c *fiber.Ctx) {
 		return
 	}
 	// Saving data
-	itemCreated, err := item.SaveIncome(server.DB)
+	itemCreated, err := item.SaveTransaction(server.DB)
 	if err != nil {
 		c.Status(500)
 		return
@@ -41,10 +33,10 @@ func (server *Server) CreateIncome(c *fiber.Ctx) {
 	c.Status(201).JSON(itemCreated)
 }
 
-func (server *Server) GetIncomes(c *fiber.Ctx) {
+func (server *Server) GetTransactions(c *fiber.Ctx) {
 	// Getting data
-	item := models.Income{}
-	items, err := item.FindAllIncomes(server.DB)
+	item := models.Transaction{}
+	items, err := item.FindAllTransactions(server.DB)
 	if err != nil {
 		c.Status(500)
 		return
@@ -53,7 +45,7 @@ func (server *Server) GetIncomes(c *fiber.Ctx) {
 	c.JSON(items)
 }
 
-func (server *Server) GetIncome(c *fiber.Ctx) {
+func (server *Server) GetTransaction(c *fiber.Ctx) {
 	// Getting URL parameter ID
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err != nil {
@@ -61,8 +53,8 @@ func (server *Server) GetIncome(c *fiber.Ctx) {
 		return
 	}
 	// Getting data
-	item := models.Income{}
-	itemByID, err := item.FindIncomeByID(server.DB, id)
+	item := models.Transaction{}
+	itemByID, err := item.FindTransactionByID(server.DB, id)
 	if err != nil {
 		c.Status(404)
 		return
@@ -71,7 +63,7 @@ func (server *Server) GetIncome(c *fiber.Ctx) {
 	c.JSON(itemByID)
 }
 
-func (server *Server) UpdateIncome(c *fiber.Ctx) {
+func (server *Server) UpdateTransaction(c *fiber.Ctx) {
 	// Getting URL parameter ID
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err != nil {
@@ -79,7 +71,7 @@ func (server *Server) UpdateIncome(c *fiber.Ctx) {
 		return
 	}
 	// Reading body http request
-	item := models.Income{}
+	item := models.Transaction{}
 	err = c.BodyParser(&item)
 	if err != nil {
 		c.Status(400).JSON(err)
@@ -93,7 +85,7 @@ func (server *Server) UpdateIncome(c *fiber.Ctx) {
 		return
 	}
 	// Saving data
-	itemUpdated, err := item.UpdateAIncome(server.DB, id)
+	itemUpdated, err := item.UpdateATransaction(server.DB, id)
 	if err != nil {
 		c.Status(500)
 		return
@@ -103,7 +95,7 @@ func (server *Server) UpdateIncome(c *fiber.Ctx) {
 	c.JSON(itemUpdated)
 }
 
-func (server *Server) DeleteIncome(c *fiber.Ctx) {
+func (server *Server) DeleteTransaction(c *fiber.Ctx) {
 	// Getting URL parameter ID
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err != nil {
@@ -111,8 +103,8 @@ func (server *Server) DeleteIncome(c *fiber.Ctx) {
 		return
 	}
 	// Deleting data
-	item := models.Income{}
-	_, err = item.DeleteAIncome(server.DB, id)
+	item := models.Transaction{}
+	_, err = item.DeleteATransaction(server.DB, id)
 	if err != nil {
 		c.Status(404)
 		return
