@@ -4,29 +4,28 @@ import (
 	"errors"
 	"html"
 	"strings"
-	"time"
 
 	"github.com/jinzhu/gorm"
 )
 
 type Transaction struct {
-	ID            uint32    `gorm:"primary_key; auto_increment" json:"id"`
-	DateTime      time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"date_time"`
-	Amount        int32     `gorm:"not null" json:"amount"`
-	Type          string    `gorm:"size:20; not null" json:"type"`
-	DetailOrigin  string    `gorm:"size:50; not null" json:"detail_origin"`
-	DetailCustom  string    `gorm:"size:50;" json:"detail_custom"`
-	Category      string    `gorm:"size:20; not null" json:"category"`
-	Method        string    `gorm:"size:20; not null" json:"method"`
-	Bank          string    `gorm:"size:20;" json:"bank"`
-	AccountNumber string    `gorm:"size:20;" json:"account_number"`
-	MadeBy        string    `gorm:"size:20; not null" json:"made_by"`
+	ID            uint32 `gorm:"primary_key; auto_increment" json:"id"`
+	DateTime      string `gorm:"not null" json:"date_time"`
+	Amount        int32  `gorm:"not null" json:"amount"`
+	Type          string `gorm:"size:20; not null" json:"type"`
+	DetailOrigin  string `gorm:"size:50; not null" json:"detail_origin"`
+	DetailCustom  string `gorm:"size:50;" json:"detail_custom"`
+	Category      string `gorm:"size:20; not null" json:"category"`
+	Method        string `gorm:"size:20; not null" json:"method"`
+	Bank          string `gorm:"size:20;" json:"bank"`
+	AccountNumber string `gorm:"size:20;" json:"account_number"`
+	MadeBy        string `gorm:"size:20; not null" json:"made_by"`
+	Balance       string `gorm:"size:20;" json:"balance"`
 	// UserID			uint32		`sql:"type:int REFERENCES users(id)" json:"user_id"`
 }
 
 func (t *Transaction) Prepare() {
 	t.ID = 0
-	t.DateTime = time.Now()
 	t.Type = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Type)))
 	t.DetailOrigin = html.EscapeString(strings.TrimSpace(t.DetailOrigin))
 	t.DetailCustom = html.EscapeString(strings.TrimSpace(t.DetailCustom))
@@ -38,6 +37,9 @@ func (t *Transaction) Prepare() {
 }
 
 func (t *Transaction) Validate() error {
+	if t.DateTime == "" {
+		return errors.New("DateTime field is required.")
+	}
 	if t.Amount < 1 {
 		return errors.New("Amount field is required.")
 	}
