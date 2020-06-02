@@ -13,20 +13,20 @@ func (server *Server) CreateTransaction(c *fiber.Ctx) {
 	item := models.Transaction{}
 	err := c.BodyParser(&item)
 	if err != nil {
-		c.Status(400)
+		c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Preparing and validating data
 	item.Prepare()
 	err = item.Validate()
 	if err != nil {
-		c.Status(400)
+		c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Saving data
 	itemCreated, err := item.SaveTransaction(server.DB)
 	if err != nil {
-		c.Status(500)
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Http response
@@ -38,7 +38,7 @@ func (server *Server) GetTransactions(c *fiber.Ctx) {
 	item := models.Transaction{}
 	items, err := item.FindAllTransactions(server.DB)
 	if err != nil {
-		c.Status(500)
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Http response
@@ -49,14 +49,14 @@ func (server *Server) GetTransaction(c *fiber.Ctx) {
 	// Getting URL parameter ID
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(400)
+		c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Getting data
 	item := models.Transaction{}
 	itemByID, err := item.FindTransactionByID(server.DB, id)
 	if err != nil {
-		c.Status(404)
+		c.Status(404).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Http response
@@ -67,27 +67,27 @@ func (server *Server) UpdateTransaction(c *fiber.Ctx) {
 	// Getting URL parameter ID
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(400).JSON(err)
+		c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Reading body http request
 	item := models.Transaction{}
 	err = c.BodyParser(&item)
 	if err != nil {
-		c.Status(400).JSON(err)
+		c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Preparing and validating data
 	item.Prepare()
 	err = item.Validate()
 	if err != nil {
-		c.Status(400).JSON(err)
+		c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Saving data
 	itemUpdated, err := item.UpdateATransaction(server.DB, id)
 	if err != nil {
-		c.Status(500)
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Http response
@@ -99,14 +99,14 @@ func (server *Server) DeleteTransaction(c *fiber.Ctx) {
 	// Getting URL parameter ID
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(400)
+		c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Deleting data
 	item := models.Transaction{}
 	_, err = item.DeleteATransaction(server.DB, id)
 	if err != nil {
-		c.Status(404)
+		c.Status(404).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Http response

@@ -10,17 +10,17 @@ import (
 
 type Transaction struct {
 	ID            uint32 `gorm:"primary_key; auto_increment" json:"id"`
-	DateTime      string `gorm:"not null" json:"date_time"`
+	Date          string `gorm:"not null" json:"date"`
 	Amount        int32  `gorm:"not null" json:"amount"`
 	Type          string `gorm:"size:20; not null" json:"type"`
 	DetailOrigin  string `gorm:"size:50; not null" json:"detail_origin"`
 	DetailCustom  string `gorm:"size:50;" json:"detail_custom"`
-	Category      string `gorm:"size:20; not null" json:"category"`
+	Category      string `gorm:"size:20;" json:"category"`
 	Method        string `gorm:"size:20; not null" json:"method"`
 	Bank          string `gorm:"size:20;" json:"bank"`
 	AccountNumber string `gorm:"size:20;" json:"account_number"`
 	MadeBy        string `gorm:"size:20; not null" json:"made_by"`
-	Balance       string `gorm:"size:20;" json:"balance"`
+	Balance       int32  `json:"balance"`
 	// UserID			uint32		`sql:"type:int REFERENCES users(id)" json:"user_id"`
 }
 
@@ -37,8 +37,8 @@ func (t *Transaction) Prepare() {
 }
 
 func (t *Transaction) Validate() error {
-	if t.DateTime == "" {
-		return errors.New("DateTime field is required.")
+	if t.Date == "" {
+		return errors.New("Date field is required.")
 	}
 	if t.Amount < 1 {
 		return errors.New("Amount field is required.")
@@ -48,9 +48,6 @@ func (t *Transaction) Validate() error {
 	}
 	if t.DetailOrigin == "" {
 		return errors.New("Detail field is required.")
-	}
-	if t.Category == "" {
-		return errors.New("Category field is required.")
 	}
 	if t.Method == "" {
 		return errors.New("Method field is required.")
