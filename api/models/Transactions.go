@@ -9,18 +9,18 @@ import (
 )
 
 type Transaction struct {
-	ID            uint32 `gorm:"primary_key; auto_increment" json:"id"`
-	Date          string `gorm:"not null" json:"date"`
-	Amount        int32  `gorm:"not null" json:"amount"`
-	Type          string `gorm:"size:20; not null" json:"type"`
-	DetailOrigin  string `gorm:"size:50; not null" json:"detail_origin"`
-	DetailCustom  string `gorm:"size:50;" json:"detail_custom"`
-	Category      string `gorm:"size:20;" json:"category"`
-	Method        string `gorm:"size:20; not null" json:"method"`
-	Bank          string `gorm:"size:20;" json:"bank"`
-	AccountNumber string `gorm:"size:20;" json:"account_number"`
-	MadeBy        string `gorm:"size:20; not null" json:"made_by"`
-	Balance       int32  `json:"balance"`
+	ID           uint32 `gorm:"primary_key; auto_increment" json:"id"`
+	Date         string `gorm:"not null" json:"date"`
+	Amount       int32  `gorm:"not null" json:"amount"`
+	Type         string `gorm:"size:20; not null" json:"type"`
+	DetailOrigin string `gorm:"size:50; not null" json:"detail_origin"`
+	DetailCustom string `gorm:"size:50;" json:"detail_custom"`
+	Category     string `gorm:"size:20;" json:"category"`
+	Method       string `gorm:"size:20; not null" json:"method"`
+	Bank         string `gorm:"size:20;" json:"bank"`
+	Account      string `gorm:"size:20;" json:"account"`
+	MadeBy       string `gorm:"size:20; not null" json:"made_by"`
+	Balance      int32  `json:"balance"`
 	// UserID			uint32		`sql:"type:int REFERENCES users(id)" json:"user_id"`
 }
 
@@ -32,7 +32,7 @@ func (t *Transaction) Prepare() {
 	t.Category = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Category)))
 	t.Method = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Method)))
 	t.Bank = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Bank)))
-	t.AccountNumber = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.AccountNumber)))
+	t.Account = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Account)))
 	t.MadeBy = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.MadeBy)))
 }
 
@@ -40,7 +40,7 @@ func (t *Transaction) Validate() error {
 	if t.Date == "" {
 		return errors.New("Date field is required.")
 	}
-	if t.Amount < 1 {
+	if t.Amount == 0 {
 		return errors.New("Amount field is required.")
 	}
 	if t.Type == "" {
@@ -73,7 +73,7 @@ func (t *Transaction) Validate() error {
 	if len(t.Bank) > 20 {
 		return errors.New("Bank field must be under 20 characters.")
 	}
-	if len(t.AccountNumber) > 20 {
+	if len(t.Account) > 20 {
 		return errors.New("Account Number field must be under 20 characters.")
 	}
 	if len(t.MadeBy) > 20 {
