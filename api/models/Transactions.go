@@ -110,6 +110,15 @@ func (t *Transaction) FindTransactionByID(db *gorm.DB, id uint64) (*Transaction,
 	return t, nil
 }
 
+func (t *Transaction) FindLastTransaction(db *gorm.DB) (*Transaction, error) {
+	var err error
+	err = db.Debug().Model(&Transaction{}).Last(&t).Error
+	if err != nil {
+		return &Transaction{}, err
+	}
+	return t, nil
+}
+
 func (t *Transaction) UpdateATransaction(db *gorm.DB, id uint64) (*Transaction, error) {
 	var err error
 	err = db.Debug().Model(&Transaction{}).Where("id = ?", id).Updates(&t).Error

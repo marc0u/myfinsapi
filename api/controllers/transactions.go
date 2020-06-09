@@ -45,6 +45,18 @@ func (server *Server) GetTransactions(c *fiber.Ctx) {
 	c.JSON(items)
 }
 
+func (server *Server) GetLastTransaction(c *fiber.Ctx) {
+	// Getting data
+	item := models.Transaction{}
+	items, err := item.FindLastTransaction(server.DB)
+	if err != nil {
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	// Http response
+	c.JSON(items)
+}
+
 func (server *Server) GetTransaction(c *fiber.Ctx) {
 	// Getting URL parameter ID
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
