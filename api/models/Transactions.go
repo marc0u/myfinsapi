@@ -94,7 +94,7 @@ func (t *Transaction) SaveTransaction(db *gorm.DB) (*Transaction, error) {
 func (t *Transaction) FindAllTransactions(db *gorm.DB) (*[]Transaction, error) {
 	var err error
 	transactions := []Transaction{}
-	err = db.Debug().Model(&Transaction{}).Limit(100).Find(&transactions).Error
+	err = db.Debug().Model(&Transaction{}).Order("id desc").Limit(100).Find(&transactions).Error
 	if err != nil {
 		return &[]Transaction{}, err
 	}
