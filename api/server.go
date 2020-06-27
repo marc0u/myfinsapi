@@ -4,8 +4,7 @@ import (
 	"log"
 	"os"
 
-	"gitlab.com/marco.urriola/apifinances/api/controllers"
-	// "gitlab.com/marco.urriola/apifinances/api/seed"
+	"gitlab.com/marco.urriola/myfinsapi/api/controllers"
 
 	"github.com/joho/godotenv"
 )
@@ -26,6 +25,5 @@ func Run() {
 		log.Fatalf("Error getting env, %v", err)
 	}
 	server.Initialize(os.Getenv("DB_DRIVER"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_HOST"), os.Getenv("DB_NAME"))
-	// seed.Load(server.DB)
 	server.Run(os.Getenv("API_PORT"))
 }

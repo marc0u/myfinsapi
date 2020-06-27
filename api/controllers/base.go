@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"gitlab.com/marco.urriola/apifinances/api/models"
+	"gitlab.com/marco.urriola/myfinsapi/api/models"
 
 	"github.com/gofiber/fiber"
 

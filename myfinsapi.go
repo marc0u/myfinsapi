@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gitlab.com/marco.urriola/apifinances/api"
+	"gitlab.com/marco.urriola/myfinsapi/api"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module gitlab.com/marco.urriola/apifinances
+module gitlab.com/marco.urriola/myfinsapi
 
 go 1.14
 

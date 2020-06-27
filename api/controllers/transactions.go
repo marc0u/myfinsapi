@@ -3,7 +3,7 @@ package controllers
 import (
 	"strconv"
 
-	"gitlab.com/marco.urriola/apifinances/api/models"
+	"gitlab.com/marco.urriola/myfinsapi/api/models"
 
 	"github.com/gofiber/fiber"
 )

@@ -30,5 +30,5 @@ EXPOSE 7001
 USER appuser:appuser
 # Set Time zone
 ENV TZ=America/Santiago
-# Run the apifinances binary
-# ENTRYPOINT ["/app/apifinances"]
+# Run the myfinsapi binary
+ENTRYPOINT ["/app/myfinsapi"]
