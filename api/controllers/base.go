@@ -6,6 +6,7 @@ import (
 
 	"gitlab.com/marco.urriola/myfinsapi/api/models"
 
+	"github.com/gofiber/cors"
 	"github.com/gofiber/fiber"
 
 	"github.com/jinzhu/gorm"
@@ -53,7 +54,9 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, D
 		server.DB.Exec("PRAGMA foreign_keys = ON")
 	}
 	server.DB.Debug().AutoMigrate(&models.Transaction{}) //database migration
+	// Set fiber server
 	server.Router = fiber.New()
+	server.Router.Use(cors.New())
 	server.initializeRoutes()
 }
 

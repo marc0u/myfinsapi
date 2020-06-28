@@ -14,12 +14,12 @@ RUN adduser \
     -u "${UID}" \    
     "${USER}"
 
-# FROM scratch
-# LABEL version="1.0"
+FROM scratch
+LABEL version="1.1.0"
 # Import from builder
-# COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-# COPY --from=builder /etc/passwd /etc/passwd
-# COPY --from=builder /etc/group /etc/group
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/group /etc/group
 # Set Workdir
 WORKDIR /app
 # Set Volume
