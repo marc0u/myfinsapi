@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"strconv"
 
 	"gitlab.com/marco.urriola/myfinsapi/api/models"
@@ -57,7 +58,7 @@ func (server *Server) GetLastTransaction(c *fiber.Ctx) {
 	c.JSON(items)
 }
 
-func (server *Server) GetTransaction(c *fiber.Ctx) {
+func (server *Server) GetTransactionByID(c *fiber.Ctx) {
 	// Getting URL parameter ID
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err != nil {
@@ -73,6 +74,30 @@ func (server *Server) GetTransaction(c *fiber.Ctx) {
 	}
 	// Http response
 	c.JSON(itemByID)
+}
+
+func (server *Server) GetTransactionByDate(c *fiber.Ctx) {
+	// Getting URL parameter ID
+	year := c.Params("year")
+	if year == "" {
+		c.Status(400).JSON(fiber.Map{"error": "Year parameter is missing."})
+		return
+	}
+	month := c.Params("month")
+	if month == "" {
+		c.Status(400).JSON(fiber.Map{"error": "Month parameter is missing"})
+		return
+	}
+	date := fmt.Sprintf("%s-%s", year, month)
+	// Getting data
+	item := models.Transaction{}
+	itemsByDate, err := item.FindTransactionsByDate(server.DB, date)
+	if err != nil {
+		c.Status(404).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	// Http response
+	c.JSON(itemsByDate)
 }
 
 func (server *Server) UpdateTransaction(c *fiber.Ctx) {
