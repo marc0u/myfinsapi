@@ -1,10 +1,10 @@
-package controllers
+package handlers
 
 import (
 	"fmt"
 	"strconv"
 
-	"gitlab.com/marco.urriola/myfinsapi/api/models"
+	"github.com/marc0u/myfinsapi/api/models"
 
 	"github.com/gofiber/fiber"
 )
