@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -16,6 +17,7 @@ func init() {
 }
 
 func main() {
+	fmt.Printf("---------- MyfinsAPI v%s ----------\n", os.Getenv(("API_VERSION")))
 	var server = handlers.Server{}
 	// Initialize DB
 	server.InitializeDB(os.Getenv("DB_DRIVER"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_PORT"), os.Getenv("DB_HOST"), os.Getenv("DB_NAME"))

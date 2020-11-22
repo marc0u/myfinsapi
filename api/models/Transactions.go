@@ -30,12 +30,15 @@ func (t *Transaction) Prepare() {
 	t.ID = 0
 	t.Type = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Type)))
 	t.DetailOrigin = html.EscapeString(strings.TrimSpace(t.DetailOrigin))
-	t.DetailCustom = html.EscapeString(strings.TrimSpace(t.DetailCustom))
 	t.Category = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Category)))
 	t.Method = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Method)))
 	t.Bank = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Bank)))
 	t.Account = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Account)))
 	t.MadeBy = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.MadeBy)))
+	if t.DetailCustom == "" {
+		t.DetailCustom = t.DetailOrigin
+	}
+	t.DetailCustom = html.EscapeString(strings.TrimSpace(t.DetailCustom))
 }
 
 func (t *Transaction) Validate() error {

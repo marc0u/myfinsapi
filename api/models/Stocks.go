@@ -13,7 +13,7 @@ type Stock struct {
 	Date         string  `gorm:"not null" json:"date"`
 	Ticker       string  `gorm:"size:10" json:"ticker"`
 	TransType    string  `gorm:"not null; size:20" json:"trans_type"`
-	StocksAmount uint32  `json:"stocks_amount"`
+	StocksAmount int32   `json:"stocks_amount"`
 	StockPrice   float32 `json:"stock_price"`
 	TotalAmount  float32 `gorm:"not null" json:"total_amount"`
 	Balance      float32 `gorm:"not null" json:"balance"`
@@ -27,11 +27,13 @@ func (r *Stock) Prepare() {
 	r.TransType = html.EscapeString(strings.ToUpper(strings.TrimSpace(r.TransType)))
 	r.Country = html.EscapeString(strings.ToUpper(strings.TrimSpace(r.Country)))
 	r.Currency = html.EscapeString(strings.ToUpper(strings.TrimSpace(r.Currency)))
-	if r.TransType != "SELL" || r.TransType != "BUY" {
-		r.Ticker = ""
-		r.StocksAmount = 0
-		r.StockPrice = 0.0
+	if r.TransType == "SELL" || r.TransType == "BUY" {
+		r.StockPrice = r.TotalAmount / float32(r.StocksAmount)
+		return
 	}
+	r.Ticker = ""
+	r.StocksAmount = 0
+	r.StockPrice = 0
 }
 
 func (r *Stock) Validate() error {
@@ -41,7 +43,7 @@ func (r *Stock) Validate() error {
 	if r.TransType == "" {
 		return errors.New("TransType field is required.")
 	}
-	if r.TotalAmount < 1 {
+	if r.TotalAmount < 1.0 {
 		return errors.New("TotalAmount field must be grater than 0.")
 	}
 	if r.Country == "" {
@@ -63,7 +65,7 @@ func (r *Stock) Validate() error {
 		if r.Ticker == "" {
 			return errors.New("Ticker field is required.")
 		}
-		if r.StocksAmount > 1 {
+		if r.StocksAmount < 1 {
 			return errors.New("StocksAmount field must be grater than 0.")
 		}
 		if len(r.Ticker) > 10 {
@@ -82,7 +84,9 @@ func (r *Stock) SaveAStock(db *gorm.DB) (*Stock, error) {
 	} else {
 		r.Balance = item.Balance + r.TotalAmount
 	}
-	r.StockPrice = r.TotalAmount / float32(r.StocksAmount)
+	if r.TransType == "SELL" {
+		r.StocksAmount = r.StocksAmount * -1
+	}
 	err = db.Debug().Model(&Stock{}).Create(&r).Error
 	if err != nil {
 		return &Stock{}, err
