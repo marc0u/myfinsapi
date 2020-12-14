@@ -26,6 +26,7 @@ func (s *Server) initializeRoutes() {
 	s.Router.Delete(fmt.Sprintf("/api/myfins/v%v/stocks/:id", version), s.DeleteStock)
 	// GET My Stocks
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks", version), s.GetStocks)
+	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks/holdings", version), s.GetHoldings)
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks/:id", version), s.GetStockByID)
 }
 
@@ -37,10 +38,10 @@ PUT:/api/myfins/v%[1]v/transactions/:id
 DELETE:/api/myfins/v%[1]v/transactions/:id
 
 Get Transactions
-/api/myfins/v%[1]v/transactions
-/api/myfins/v%[1]v/transactions/last
-/api/myfins/v%[1]v/transactions/:id
-/api/myfins/v%[1]v/transactions/date/:year/:month
+GET:/api/myfins/v%[1]v/transactions
+GET:/api/myfins/v%[1]v/transactions/last
+GET:/api/myfins/v%[1]v/transactions/:id
+GET:/api/myfins/v%[1]v/transactions/date/:year/:month
 
 Handle Stocks
 POST:/api/myfins/v%[1]v/stocks
@@ -49,7 +50,8 @@ DELETE:/api/myfins/v%[1]v/stocks/:id
 
 Get Stocks
 GET:/api/myfins/v%[1]v/stocks
-GET:/api/myfins/v%[1]v/stocks/:id`
+GET:/api/myfins/v%[1]v/stocks/:id
+GET:/api/myfins/v%[1]v/stocks/holdings`
 
 	msg = fmt.Sprintf(msg, version)
 	c.SendString(msg)

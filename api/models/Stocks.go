@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
+	"github.com/marc0u/myfinsapi/api/utils"
 )
 
 type Stock struct {
@@ -117,7 +118,7 @@ func (r *Stock) DeleteAStock(db *gorm.DB, id uint64) (int64, error) {
 func (r *Stock) FindAllStocks(db *gorm.DB) (*[]Stock, error) {
 	var err error
 	stocks := []Stock{}
-	err = db.Debug().Model(&Stock{}).Order("date desc").Order("id desc").Limit(100).Find(&stocks).Error
+	err = db.Debug().Model(&Stock{}).Order("date desc").Order("id desc").Find(&stocks).Error
 	if err != nil {
 		return &[]Stock{}, err
 	}
@@ -131,4 +132,28 @@ func (r *Stock) FindStockByID(db *gorm.DB, id uint64) (*Stock, error) {
 		return &Stock{}, err
 	}
 	return r, nil
+}
+
+func (r *Stock) FindStocksByTicker(db *gorm.DB, ticker string) (*[]Stock, error) {
+	var err error
+	stocks := []Stock{}
+	err = db.Debug().Model(&Stock{}).Where("ticker = ?", ticker).Find(&stocks).Error
+	if err != nil {
+		return &[]Stock{}, err
+	}
+	return &stocks, nil
+}
+
+func (r *Stock) FindTickers(db *gorm.DB) ([]string, error) {
+	var err error
+	stocks := []Stock{}
+	err = db.Debug().Model(&Stock{}).Select("ticker").Not("ticker = ?", "").Find(&stocks).Error
+	if err != nil {
+		return []string{}, err
+	}
+	tickers := []string{}
+	for _, stock := range stocks {
+		tickers = append(tickers, stock.Ticker)
+	}
+	return utils.RemoveDuplicateStrings(tickers), nil
 }
