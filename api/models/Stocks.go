@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
-	"github.com/marc0u/myfinsapi/api/utils"
 )
 
 type Stock struct {
@@ -44,8 +43,8 @@ func (r *Stock) Validate() error {
 	if r.TransType == "" {
 		return errors.New("TransType field is required.")
 	}
-	if r.TotalAmount < 1.0 {
-		return errors.New("TotalAmount field must be grater than 0.")
+	if r.TotalAmount == 0 {
+		return errors.New("TotalAmount field must not be 0.")
 	}
 	if r.Country == "" {
 		return errors.New("Country field is required.")
@@ -134,26 +133,36 @@ func (r *Stock) FindStockByID(db *gorm.DB, id uint64) (*Stock, error) {
 	return r, nil
 }
 
-func (r *Stock) FindStocksByTicker(db *gorm.DB, ticker string) (*[]Stock, error) {
+func (r *Stock) FindStocksHolings(db *gorm.DB) (*[]Stock, error) {
 	var err error
 	stocks := []Stock{}
-	err = db.Debug().Model(&Stock{}).Where("ticker = ?", ticker).Find(&stocks).Error
+	err = db.Debug().Model(&Stock{}).Order("date").Not("ticker = ?", "").Find(&stocks).Error
 	if err != nil {
 		return &[]Stock{}, err
 	}
 	return &stocks, nil
 }
 
-func (r *Stock) FindTickers(db *gorm.DB) ([]string, error) {
-	var err error
-	stocks := []Stock{}
-	err = db.Debug().Model(&Stock{}).Select("ticker").Not("ticker = ?", "").Find(&stocks).Error
-	if err != nil {
-		return []string{}, err
-	}
-	tickers := []string{}
-	for _, stock := range stocks {
-		tickers = append(tickers, stock.Ticker)
-	}
-	return utils.RemoveDuplicateStrings(tickers), nil
-}
+// func (r *Stock) FindStocksByTicker(db *gorm.DB, ticker string) (*[]Stock, error) {
+// 	var err error
+// 	stocks := []Stock{}
+// 	err = db.Debug().Model(&Stock{}).Where("ticker = ?", ticker).Find(&stocks).Error
+// 	if err != nil {
+// 		return &[]Stock{}, err
+// 	}
+// 	return &stocks, nil
+// }
+
+// func (r *Stock) FindTickers(db *gorm.DB) ([]string, error) {
+// 	var err error
+// 	stocks := []Stock{}
+// 	err = db.Debug().Model(&Stock{}).Select("ticker").Not("ticker = ?", "").Find(&stocks).Error
+// 	if err != nil {
+// 		return []string{}, err
+// 	}
+// 	tickers := []string{}
+// 	for _, stock := range stocks {
+// 		tickers = append(tickers, stock.Ticker)
+// 	}
+// 	return utils.RemoveDuplicateStrings(tickers), nil
+// }

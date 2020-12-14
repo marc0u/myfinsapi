@@ -116,19 +116,10 @@ func (server *Server) GetStockByID(c *fiber.Ctx) {
 func (server *Server) GetHoldings(c *fiber.Ctx) {
 	// Getting data
 	item := models.Stock{}
-	tickers, err := item.FindTickers(server.DB)
+	items, err := item.FindStocksHolings(server.DB)
 	if err != nil {
 		c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		return
-	}
-	items := []models.Stock{}
-	for _, ticker := range tickers {
-		result, err := item.FindStocksByTicker(server.DB, ticker)
-		if err != nil {
-			c.Status(500).JSON(fiber.Map{"error": err.Error()})
-			return
-		}
-		items = append(items, *result...)
 	}
 	// Http response
 	c.JSON(items)
