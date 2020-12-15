@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
+	"github.com/marc0u/myfinsapi/api/utils"
 )
 
 type Stock struct {
@@ -17,6 +18,15 @@ type Stock struct {
 	StockPrice   float32 `json:"stock_price"`
 	TotalAmount  float32 `gorm:"not null" json:"total_amount"`
 	Balance      float32 `gorm:"not null" json:"balance"`
+	Country      string  `gorm:"not null; size:20" json:"country"`
+	Currency     string  `gorm:"not null; size:10" json:"currency"`
+}
+
+type StockHolding struct {
+	Ticker       string  `gorm:"size:10" json:"ticker"`
+	StocksAmount int32   `json:"stocks_amount"`
+	StockPrice   float32 `json:"stock_price"`
+	TotalAmount  float32 `gorm:"not null" json:"total_amount"`
 	Country      string  `gorm:"not null; size:20" json:"country"`
 	Currency     string  `gorm:"not null; size:10" json:"currency"`
 }
@@ -133,36 +143,61 @@ func (r *Stock) FindStockByID(db *gorm.DB, id uint64) (*Stock, error) {
 	return r, nil
 }
 
-func (r *Stock) FindStocksHolings(db *gorm.DB) (*[]Stock, error) {
+func (r *Stock) FindStocksByTicker(db *gorm.DB, ticker string) (*[]Stock, error) {
 	var err error
 	stocks := []Stock{}
-	err = db.Debug().Model(&Stock{}).Order("date").Not("ticker = ?", "").Find(&stocks).Error
+	err = db.Debug().Model(&Stock{}).Where("ticker = ?", ticker).Find(&stocks).Error
 	if err != nil {
 		return &[]Stock{}, err
 	}
 	return &stocks, nil
 }
 
-// func (r *Stock) FindStocksByTicker(db *gorm.DB, ticker string) (*[]Stock, error) {
+func (r *Stock) FindTickers(db *gorm.DB) ([]string, error) {
+	var err error
+	stocks := []Stock{}
+	err = db.Debug().Model(&Stock{}).Select("ticker").Not("ticker = ?", "").Find(&stocks).Error
+	if err != nil {
+		return []string{}, err
+	}
+	tickers := []string{}
+	for _, stock := range stocks {
+		tickers = append(tickers, stock.Ticker)
+	}
+	return utils.RemoveDuplicateStrings(tickers), nil
+}
+
+func ReduceStockHolding(stocks []Stock) StockHolding {
+	var (
+		stocksAmount int32
+		totalAmount  float32
+		stockPrice   float32
+	)
+	for _, stock := range stocks {
+		stocksAmount = stocksAmount + stock.StocksAmount
+		if stocksAmount == 0 {
+			totalAmount = 0.0
+			continue
+		}
+		totalAmount = totalAmount + stock.TotalAmount
+	}
+	if stocksAmount != 0 {
+		stockPrice = totalAmount / float32(stocksAmount)
+	}
+	return StockHolding{Ticker: stocks[0].Ticker,
+		StocksAmount: stocksAmount,
+		StockPrice:   stockPrice,
+		TotalAmount:  totalAmount,
+		Country:      stocks[0].Country,
+		Currency:     stocks[0].Currency}
+}
+
+// func (r *Stock) FindStocksHolings(db *gorm.DB) (*[]Stock, error) {
 // 	var err error
 // 	stocks := []Stock{}
-// 	err = db.Debug().Model(&Stock{}).Where("ticker = ?", ticker).Find(&stocks).Error
+// 	err = db.Debug().Model(&Stock{}).Order("date").Not("ticker = ?", "").Find(&stocks).Error
 // 	if err != nil {
 // 		return &[]Stock{}, err
 // 	}
 // 	return &stocks, nil
-// }
-
-// func (r *Stock) FindTickers(db *gorm.DB) ([]string, error) {
-// 	var err error
-// 	stocks := []Stock{}
-// 	err = db.Debug().Model(&Stock{}).Select("ticker").Not("ticker = ?", "").Find(&stocks).Error
-// 	if err != nil {
-// 		return []string{}, err
-// 	}
-// 	tickers := []string{}
-// 	for _, stock := range stocks {
-// 		tickers = append(tickers, stock.Ticker)
-// 	}
-// 	return utils.RemoveDuplicateStrings(tickers), nil
 // }
