@@ -2,10 +2,8 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"html"
 	"strings"
-	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -116,17 +114,9 @@ func (t *Transaction) FindTransactionByID(db *gorm.DB, id uint64) (*Transaction,
 	return t, nil
 }
 
-func (t *Transaction) FindTransactionsByDate(db *gorm.DB, dateInput string) (*[]Transaction, error) {
+func (t *Transaction) FindTransactionsBetweenDates(db *gorm.DB, from string, to string) (*[]Transaction, error) {
 	transactions := []Transaction{}
-	date, err := time.Parse("2006-01-02 15:04:05", fmt.Sprintf("%s-01 00:00:00", dateInput))
-	if err != nil {
-		return &[]Transaction{}, err
-	}
-	firstOfMonth := time.Date(date.Year(), date.Month(), 1, 0, 0, 0, 0, date.Location())
-	lastOfMonth := firstOfMonth.AddDate(0, 1, 0).Add(time.Second * -1)
-	startDate := firstOfMonth.Format("2006-01-02 15:04:05")
-	endDate := lastOfMonth.Format("2006-01-02 15:04:05")
-	err = db.Debug().Model(&Transaction{}).Where("date BETWEEN ? AND ?", startDate, endDate).Order("date desc").Order("id desc").Find(&transactions).Error
+	err := db.Debug().Model(&Transaction{}).Where("date BETWEEN ? AND ?", from, to).Order("date desc").Order("id desc").Find(&transactions).Error
 	if err != nil {
 		return &[]Transaction{}, err
 	}

@@ -18,8 +18,10 @@ func (s *Server) initializeRoutes() {
 	// GET Transactions
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/transactions", version), s.GetTransactions)
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/transactions/last", version), s.GetLastTransaction)
+	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/transactions/summary", version), s.GetSummaryCurrentMonth)
+	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/transactions/summary/:from-:to", version), s.GetSummaryBetweenDates)
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/transactions/:id", version), s.GetTransactionByID)
-	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/transactions/date/:year/:month", version), s.GetTransactionByDate)
+	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/transactions/dates/:from-:to", version), s.GetTransactionBetweenDates)
 	// Handle My Stocks
 	s.Router.Post(fmt.Sprintf("/api/myfins/v%v/stocks", version), s.CreateStock)
 	s.Router.Put(fmt.Sprintf("/api/myfins/v%v/stocks/:id", version), s.UpdateStock)
