@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"html"
+	"math"
 	"strings"
 
 	"github.com/jinzhu/gorm"
@@ -15,9 +16,9 @@ type Stock struct {
 	Ticker       string  `gorm:"size:10" json:"ticker"`
 	TransType    string  `gorm:"not null; size:20" json:"trans_type"`
 	StocksAmount int32   `json:"stocks_amount"`
-	StockPrice   float32 `json:"stock_price"`
-	TotalAmount  float32 `gorm:"not null" json:"total_amount"`
-	Balance      float32 `gorm:"not null" json:"balance"`
+	StockPrice   float64 `json:"stock_price"`
+	TotalAmount  float64 `gorm:"not null" json:"total_amount"`
+	Balance      float64 `gorm:"not null" json:"balance"`
 	Country      string  `gorm:"not null; size:20" json:"country"`
 	Currency     string  `gorm:"not null; size:10" json:"currency"`
 }
@@ -25,8 +26,8 @@ type Stock struct {
 type StockHolding struct {
 	Ticker       string  `gorm:"size:10" json:"ticker"`
 	StocksAmount int32   `json:"stocks_amount"`
-	StockPrice   float32 `json:"stock_price"`
-	TotalAmount  float32 `gorm:"not null" json:"total_amount"`
+	StockPrice   float64 `json:"stock_price"`
+	TotalAmount  float64 `gorm:"not null" json:"total_amount"`
 	Country      string  `gorm:"not null; size:20" json:"country"`
 	Currency     string  `gorm:"not null; size:10" json:"currency"`
 }
@@ -38,7 +39,13 @@ func (r *Stock) Prepare() {
 	r.Country = html.EscapeString(strings.ToUpper(strings.TrimSpace(r.Country)))
 	r.Currency = html.EscapeString(strings.ToUpper(strings.TrimSpace(r.Currency)))
 	if r.TransType == "SELL" || r.TransType == "BUY" {
-		r.StockPrice = r.TotalAmount / float32(r.StocksAmount)
+		if r.TransType == "SELL" {
+			r.StocksAmount = int32(math.Abs(float64(r.StocksAmount))) * -1
+		}
+		if r.TransType == "BUY" {
+			r.StocksAmount = int32(math.Abs(float64(r.StocksAmount)))
+		}
+		r.StockPrice = math.Abs(r.TotalAmount / float64(r.StocksAmount))
 		return
 	}
 	r.Ticker = ""
@@ -75,8 +82,8 @@ func (r *Stock) Validate() error {
 		if r.Ticker == "" {
 			return errors.New("Ticker field is required.")
 		}
-		if r.StocksAmount < 1 {
-			return errors.New("StocksAmount field must be grater than 0.")
+		if r.StocksAmount == 0 {
+			return errors.New("StocksAmount field must not be 0.")
 		}
 		if len(r.Ticker) > 10 {
 			return errors.New("Ticker field must be under 10 characters.")
@@ -93,9 +100,6 @@ func (r *Stock) SaveAStock(db *gorm.DB) (*Stock, error) {
 		r.Balance = item.Balance - r.TotalAmount
 	} else {
 		r.Balance = item.Balance + r.TotalAmount
-	}
-	if r.TransType == "SELL" {
-		r.StocksAmount = r.StocksAmount * -1
 	}
 	err = db.Debug().Model(&Stock{}).Create(&r).Error
 	if err != nil {
@@ -170,8 +174,8 @@ func (r *Stock) FindTickers(db *gorm.DB) ([]string, error) {
 func ReduceStockHolding(stocks []Stock) StockHolding {
 	var (
 		stocksAmount int32
-		totalAmount  float32
-		stockPrice   float32
+		totalAmount  float64
+		stockPrice   float64
 	)
 	for _, stock := range stocks {
 		stocksAmount = stocksAmount + stock.StocksAmount
@@ -182,7 +186,7 @@ func ReduceStockHolding(stocks []Stock) StockHolding {
 		totalAmount = totalAmount + stock.TotalAmount
 	}
 	if stocksAmount != 0 {
-		stockPrice = totalAmount / float32(stocksAmount)
+		stockPrice = totalAmount / float64(stocksAmount)
 	}
 	return StockHolding{Ticker: stocks[0].Ticker,
 		StocksAmount: stocksAmount,

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/marc0u/myfinsapi/api/models"
@@ -133,20 +132,7 @@ func (server *Server) GetHoldings(c *fiber.Ctx) {
 		if holding.StocksAmount != 0 {
 			items = append(items, holding)
 		}
-		fmt.Println(items)
 	}
 	// Http response
 	c.JSON(items)
 }
-
-// func (server *Server) GetHoldings(c *fiber.Ctx) {
-// 	// Getting data
-// 	item := models.Stock{}
-// 	items, err := item.FindStocksHolings(server.DB)
-// 	if err != nil {
-// 		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-// 		return
-// 	}
-// 	// Http response
-// 	c.JSON(items)
-// }

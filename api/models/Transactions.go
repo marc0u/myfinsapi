@@ -37,6 +37,7 @@ func (t *Transaction) Prepare() {
 	t.MadeBy = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.MadeBy)))
 	if t.DetailCustom == "" {
 		t.DetailCustom = t.DetailOrigin
+		return
 	}
 	t.DetailCustom = html.EscapeString(strings.TrimSpace(t.DetailCustom))
 }
