@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/jinzhu/gorm"
+	"github.com/marc0u/myfinsapi/api/utils"
 )
 
 type Transaction struct {
@@ -22,6 +23,19 @@ type Transaction struct {
 	MadeBy       string `gorm:"size:20; not null" json:"made_by"`
 	Balance      int32  `json:"balance"`
 	// UserID			uint32		`sql:"type:int REFERENCES users(id)" json:"user_id"`
+}
+
+type Summary struct {
+	StartDate         string              `json:"start_date"`
+	EndDate           string              `json:"end_date"`
+	Incomes           int32               `json:"incomes"`
+	Expenses          int32               `json:"expenses"`
+	CategoriesSummary []CategoriesSummary `json:"categories"`
+}
+
+type CategoriesSummary struct {
+	Catergory string `json:"category"`
+	Amount    int32  `json:"amount"`
 }
 
 func (t *Transaction) Prepare() {
@@ -95,6 +109,26 @@ func (t *Transaction) SaveTransaction(db *gorm.DB) (*Transaction, error) {
 	return t, nil
 }
 
+func (t *Transaction) UpdateATransaction(db *gorm.DB, id uint64) (*Transaction, error) {
+	var err error
+	err = db.Debug().Model(&Transaction{}).Where("id = ?", id).Updates(&t).Error
+	if err != nil {
+		return &Transaction{}, err
+	}
+	return t, nil
+}
+
+func (t *Transaction) DeleteATransaction(db *gorm.DB, id uint64) (int64, error) {
+	db = db.Debug().Model(&Transaction{}).Where("id = ?", id).Take(&Transaction{}).Delete(&Transaction{})
+	if db.Error != nil {
+		if gorm.IsRecordNotFoundError(db.Error) {
+			return 0, errors.New("Transaction not found.")
+		}
+		return 0, db.Error
+	}
+	return db.RowsAffected, nil
+}
+
 func (t *Transaction) FindAllTransactions(db *gorm.DB) (*[]Transaction, error) {
 	var err error
 	transactions := []Transaction{}
@@ -114,6 +148,16 @@ func (t *Transaction) FindTransactionByID(db *gorm.DB, id uint64) (*Transaction,
 	return t, nil
 }
 
+// func (t *Transaction) FindTransactionsByType(db *gorm.DB, typeTrans string) (*[]Transaction, error) {
+// 	var err error
+// 	transactions := []Transaction{}
+// 	err = db.Debug().Model(&Transaction{}).Where("type = ?", typeTrans).Find(&transactions).Error
+// 	if err != nil {
+// 		return &[]Transaction{}, err
+// 	}
+// 	return &transactions, nil
+// }
+
 func (t *Transaction) FindTransactionsBetweenDates(db *gorm.DB, from string, to string) (*[]Transaction, error) {
 	transactions := []Transaction{}
 	err := db.Debug().Model(&Transaction{}).Where("date BETWEEN ? AND ?", from, to).Order("date desc").Order("id desc").Find(&transactions).Error
@@ -131,23 +175,41 @@ func (t *Transaction) FindLastTransaction(db *gorm.DB) (*Transaction, error) {
 	}
 	return t, nil
 }
-
-func (t *Transaction) UpdateATransaction(db *gorm.DB, id uint64) (*Transaction, error) {
+func (r *Transaction) FindAllCategories(db *gorm.DB) ([]string, error) {
 	var err error
-	err = db.Debug().Model(&Transaction{}).Where("id = ?", id).Updates(&t).Error
+	transactions := []Transaction{}
+	err = db.Debug().Model(&Transaction{}).Select("category").Not("category = ?", "").Find(&transactions).Error
 	if err != nil {
-		return &Transaction{}, err
+		return []string{}, err
 	}
-	return t, nil
+	result := []string{}
+	for _, trans := range transactions {
+		result = append(result, trans.Category)
+	}
+	return utils.RemoveDuplicateStrings(result), nil
 }
 
-func (t *Transaction) DeleteATransaction(db *gorm.DB, id uint64) (int64, error) {
-	db = db.Debug().Model(&Transaction{}).Where("id = ?", id).Take(&Transaction{}).Delete(&Transaction{})
-	if db.Error != nil {
-		if gorm.IsRecordNotFoundError(db.Error) {
-			return 0, errors.New("Transaction not found.")
+func ReduceAmountsByType(transactions []Transaction, transType string) int32 {
+	var total int32
+	for _, item := range transactions {
+		if item.Type == transType {
+			total = total + item.Amount
 		}
-		return 0, db.Error
 	}
-	return db.RowsAffected, nil
+	return total
+}
+
+func ReduceAmountsByCategories(transactions []Transaction, categories []string) []CategoriesSummary {
+	var categoriesSummary []CategoriesSummary
+	for _, category := range categories {
+		var total int32
+		for _, item := range transactions {
+			if item.Category == category {
+				total = total + item.Amount
+			}
+		}
+		categoriesSummary = append(categoriesSummary, CategoriesSummary{category, total})
+		total = 0
+	}
+	return categoriesSummary
 }

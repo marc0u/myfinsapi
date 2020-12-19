@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/marc0u/myfinsapi/api/models"
@@ -127,17 +126,51 @@ func (server *Server) GetTransactionByID(c *fiber.Ctx) {
 	c.JSON(itemByID)
 }
 
-func (server *Server) GetTransactionBetweenDates(c *fiber.Ctx) {
-	// Getting URL parameter ID
-	from, err := utils.ParseDate(c.Params("from"))
+func (server *Server) GetTransactionsLastMonth(c *fiber.Ctx) {
+	from, to := utils.GetFirstLastDateCurrentMonth()
+	// Getting data
+	item := models.Transaction{}
+	items, err := item.FindTransactionsBetweenDates(server.DB, from, to)
 	if err != nil {
-		c.Status(400).JSON(fiber.Map{"error": "Paremeters must have this format :from:YYYYMMDD or :to:YYYYMMDD."})
+		c.Status(404).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
-	to, err := utils.ParseDate(c.Params("to"))
+	// Http response
+	c.JSON(items)
+}
+
+func (server *Server) GetTransactionsBetweenDates(c *fiber.Ctx) {
+	// Getting URL parameter ID
+	from, to, err := utils.ParseFromToDates(c.Query("from"), c.Query("to"))
 	if err != nil {
-		c.Status(400).JSON(fiber.Map{"error": "Paremeters must have this format :from:YYYYMMDD or :to:YYYYMMDD."})
+		c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		return
+	}
+	// Getting data
+	item := models.Transaction{}
+	items, err := item.FindTransactionsBetweenDates(server.DB, from, to)
+	if err != nil {
+		c.Status(404).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	// Http response
+	c.JSON(items)
+}
+
+func (server *Server) GetSummary(c *fiber.Ctx) {
+	var (
+		from string
+		to   string
+		err  error
+	)
+	if c.Query("from") == "" {
+		from, to = utils.GetFirstLastDateCurrentMonth()
+	} else {
+		from, to, err = utils.ParseFromToDates(c.Query("from"), c.Query("to"))
+		if err != nil {
+			c.Status(400).JSON(fiber.Map{"error": err.Error()})
+			return
+		}
 	}
 	// Getting data
 	item := models.Transaction{}
@@ -146,44 +179,19 @@ func (server *Server) GetTransactionBetweenDates(c *fiber.Ctx) {
 		c.Status(404).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
-	// Http response
-	c.JSON(itemsByDate)
-}
-
-func (server *Server) GetSummaryCurrentMonth(c *fiber.Ctx) {
-	// Getting URL parameter ID
-	year := c.Params("year")
-	// Getting data
-	item := models.Transaction{}
-	itemsByDate, err := item.FindTransactionsByDate(server.DB, date)
+	// Processing general data
+	summary := models.Summary{}
+	summary.StartDate = from
+	summary.EndDate = to
+	summary.Incomes = models.ReduceAmountsByType(*itemsByDate, "INCOME")
+	summary.Expenses = models.ReduceAmountsByType(*itemsByDate, "EXPENSE")
+	// Processiong categories data
+	categories, err := item.FindAllCategories(server.DB)
 	if err != nil {
 		c.Status(404).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
+	summary.CategoriesSummary = models.ReduceAmountsByCategories(*itemsByDate, categories)
 	// Http response
-	c.JSON(itemsByDate)
-}
-
-func (server *Server) GetSummaryBetweenDates(c *fiber.Ctx) {
-	// Getting URL parameter ID
-	year := c.Params("year")
-	if year == "" {
-		c.Status(400).JSON(fiber.Map{"error": "Year parameter is missing."})
-		return
-	}
-	month := c.Params("month")
-	if month == "" {
-		c.Status(400).JSON(fiber.Map{"error": "Month parameter is missing"})
-		return
-	}
-	date := fmt.Sprintf("%s-%s", year, month)
-	// Getting data
-	item := models.Transaction{}
-	itemsByDate, err := item.FindTransactionsByDate(server.DB, date)
-	if err != nil {
-		c.Status(404).JSON(fiber.Map{"error": err.Error()})
-		return
-	}
-	// Http response
-	c.JSON(itemsByDate)
+	c.JSON(summary)
 }
