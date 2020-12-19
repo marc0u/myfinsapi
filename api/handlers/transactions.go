@@ -126,8 +126,13 @@ func (server *Server) GetTransactionByID(c *fiber.Ctx) {
 	c.JSON(itemByID)
 }
 
-func (server *Server) GetTransactionsLastMonth(c *fiber.Ctx) {
-	from, to := utils.GetFirstLastDateCurrentMonth()
+func (server *Server) GetTransactionsByMonth(c *fiber.Ctx) {
+	// Getting URL parameters
+	from, to, err := utils.GetFirstLastDateCurrentMonth(c.Query("change"))
+	if err != nil {
+		c.Status(404).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
 	// Getting data
 	item := models.Transaction{}
 	items, err := item.FindTransactionsBetweenDates(server.DB, from, to)
@@ -140,7 +145,7 @@ func (server *Server) GetTransactionsLastMonth(c *fiber.Ctx) {
 }
 
 func (server *Server) GetTransactionsBetweenDates(c *fiber.Ctx) {
-	// Getting URL parameter ID
+	// Getting URL parameters
 	from, to, err := utils.ParseFromToDates(c.Query("from"), c.Query("to"))
 	if err != nil {
 		c.Status(400).JSON(fiber.Map{"error": err.Error()})
@@ -157,20 +162,12 @@ func (server *Server) GetTransactionsBetweenDates(c *fiber.Ctx) {
 	c.JSON(items)
 }
 
-func (server *Server) GetSummary(c *fiber.Ctx) {
-	var (
-		from string
-		to   string
-		err  error
-	)
-	if c.Query("from") == "" {
-		from, to = utils.GetFirstLastDateCurrentMonth()
-	} else {
-		from, to, err = utils.ParseFromToDates(c.Query("from"), c.Query("to"))
-		if err != nil {
-			c.Status(400).JSON(fiber.Map{"error": err.Error()})
-			return
-		}
+func (server *Server) GetSummaryByMonth(c *fiber.Ctx) {
+	// Getting URL parameters
+	from, to, err := utils.GetFirstLastDateCurrentMonth(c.Query("change"))
+	if err != nil {
+		c.Status(404).JSON(fiber.Map{"error": err.Error()})
+		return
 	}
 	// Getting data
 	item := models.Transaction{}
@@ -179,19 +176,34 @@ func (server *Server) GetSummary(c *fiber.Ctx) {
 		c.Status(404).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
-	// Processing general data
-	summary := models.Summary{}
-	summary.StartDate = from
-	summary.EndDate = to
-	summary.Incomes = models.ReduceAmountsByType(*itemsByDate, "INCOME")
-	summary.Expenses = models.ReduceAmountsByType(*itemsByDate, "EXPENSE")
-	// Processiong categories data
 	categories, err := item.FindAllCategories(server.DB)
 	if err != nil {
 		c.Status(404).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
-	summary.CategoriesSummary = models.ReduceAmountsByCategories(*itemsByDate, categories)
 	// Http response
-	c.JSON(summary)
+	c.JSON(models.ProcessSummary(from, to, *itemsByDate, categories))
+}
+
+func (server *Server) GetSummaryBetweenDates(c *fiber.Ctx) {
+	// Getting URL parameters
+	from, to, err := utils.ParseFromToDates(c.Query("from"), c.Query("to"))
+	if err != nil {
+		c.Status(400).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	// Getting data
+	item := models.Transaction{}
+	itemsByDate, err := item.FindTransactionsBetweenDates(server.DB, from, to)
+	if err != nil {
+		c.Status(404).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	categories, err := item.FindAllCategories(server.DB)
+	if err != nil {
+		c.Status(404).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	// Http response
+	c.JSON(models.ProcessSummary(from, to, *itemsByDate, categories))
 }

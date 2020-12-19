@@ -208,8 +208,21 @@ func ReduceAmountsByCategories(transactions []Transaction, categories []string) 
 				total = total + item.Amount
 			}
 		}
+		if total == 0 {
+			continue
+		}
 		categoriesSummary = append(categoriesSummary, CategoriesSummary{category, total})
 		total = 0
 	}
 	return categoriesSummary
+}
+
+func ProcessSummary(from string, to string, items []Transaction, categories []string) Summary {
+	summary := Summary{}
+	summary.StartDate = from
+	summary.EndDate = to
+	summary.Incomes = ReduceAmountsByType(items, "INCOME")
+	summary.Expenses = ReduceAmountsByType(items, "EXPENSE")
+	summary.CategoriesSummary = ReduceAmountsByCategories(items, categories)
+	return summary
 }

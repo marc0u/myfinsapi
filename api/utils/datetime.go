@@ -3,18 +3,22 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 )
 
-func GetFirstLastDateCurrentMonth() (string, string) {
+func GetFirstLastDateCurrentMonth(change string) (string, string, error) {
 	now := time.Now()
+	if change != "" {
+		change, err := strconv.Atoi(change)
+		if err != nil {
+			return "", "", err
+		}
+		now = now.AddDate(0, change, 0)
+	}
 	currentYear, currentMonth, _ := now.Date()
-	currentLocation := now.Location()
-
-	firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, currentLocation)
-	lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
-
-	return firstOfMonth.Format("2006-01-02"), lastOfMonth.Format("2006-01-02")
+	firstOfMonth := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, now.Location())
+	return firstOfMonth.Format("2006-01-02"), firstOfMonth.AddDate(0, 1, -1).Format("2006-01-02"), nil
 }
 
 func ParseDate(date string) (string, error) {
