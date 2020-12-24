@@ -31,6 +31,7 @@ type Summary struct {
 	Incomes           int32               `json:"incomes"`
 	Expenses          int32               `json:"expenses"`
 	CategoriesSummary []CategoriesSummary `json:"categories"`
+	Transactions      []Transaction       `json:"transactions"`
 }
 
 type CategoriesSummary struct {
@@ -224,5 +225,6 @@ func ProcessSummary(from string, to string, items []Transaction, categories []st
 	summary.Incomes = ReduceAmountsByType(items, "INCOME")
 	summary.Expenses = ReduceAmountsByType(items, "EXPENSE")
 	summary.CategoriesSummary = ReduceAmountsByCategories(items, categories)
+	summary.Transactions = items
 	return summary
 }
