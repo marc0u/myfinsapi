@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"html"
+	"math"
 	"strings"
 
 	"github.com/jinzhu/gorm"
@@ -48,6 +49,12 @@ func (t *Transaction) Prepare() {
 	t.Bank = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Bank)))
 	t.Account = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.Account)))
 	t.MadeBy = html.EscapeString(strings.ToUpper(strings.TrimSpace(t.MadeBy)))
+	if t.Type == "EXPENSE" {
+		t.Amount = int32(math.Abs(float64(t.Amount))) * -1
+	}
+	if t.Type == "INCOME" {
+		t.Amount = int32(math.Abs(float64(t.Amount)))
+	}
 	if t.DetailCustom == "" {
 		t.DetailCustom = t.DetailOrigin
 		return
@@ -74,8 +81,13 @@ func (t *Transaction) Validate() error {
 	if t.MadeBy == "" {
 		return errors.New("Made By field is required.")
 	}
-	if len(t.Type) > 20 {
-		return errors.New("Detail field must be under 50 characters.")
+	switch t.Type {
+	case "EXPENSE":
+		break
+	case "INCOME":
+		break
+	default:
+		return errors.New("Type field must be 'INCOME' or 'EXPENSE'.")
 	}
 	if len(t.DetailOrigin) > 50 {
 		return errors.New("Detail field must be under 50 characters.")
@@ -194,7 +206,7 @@ func ReduceAmountsByType(transactions []Transaction, transType string) int32 {
 	var total int32
 	for _, item := range transactions {
 		if item.Type == transType {
-			total = total + item.Amount
+			total = total + int32(math.Abs(float64(item.Amount)))
 		}
 	}
 	return total
@@ -206,7 +218,7 @@ func ReduceAmountsByCategories(transactions []Transaction, categories []string) 
 		var total int32
 		for _, item := range transactions {
 			if item.Category == category {
-				total = total + item.Amount
+				total = total + int32(math.Abs(float64(item.Amount)))
 			}
 		}
 		if total == 0 {
