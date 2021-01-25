@@ -1,11 +1,18 @@
 package handlers
 
 import (
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/marc0u/myfinsapi/api/models"
+	"github.com/marc0u/myfinsapi/api/utils"
 
 	"github.com/gofiber/fiber"
+
+	"github.com/go-resty/resty"
 )
 
 func (server *Server) CreateStock(c *fiber.Ctx) {
@@ -135,4 +142,138 @@ func (server *Server) GetHoldings(c *fiber.Ctx) {
 	}
 	// Http response
 	c.JSON(items)
+}
+
+type StockBalance struct {
+	Ticker       string
+	StocksAmount int32
+}
+
+type Balance struct {
+	Cash   int32
+	Stocks []StockBalance
+}
+
+type DayBalance struct {
+	Date   string
+	Amount int32
+}
+
+type Prices struct {
+	Date  string  `json:"Date"`
+	Price float32 `json:"Close"`
+}
+
+type StockPrices struct {
+	Ticker string
+	Prices []Prices
+}
+
+func FetchDailyPrices(ticker string, result interface{}) (*resty.Response, error) {
+	urlBase := fmt.Sprintf("http://rancher.loc:7002/api/stocks/v2/cl/day/%v", ticker)
+	client := resty.New()
+	resp, err := client.
+		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}).
+		SetRetryCount(3).
+		SetRetryWaitTime(3 * time.Second).
+		SetRetryMaxWaitTime(5 * time.Second).
+		SetTimeout(10 * time.Second).
+		R().
+		SetResult(&result).
+		ForceContentType("application/json").
+		Get(urlBase)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
+	// Getting URL parameters
+	from, to, err := utils.ParseFromToDates(c.Query("from"), c.Query("to"))
+	if err != nil {
+		c.Status(400).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	// Getting Portfolio Tickers
+	item := models.Stock{}
+	tickers, err := item.FindTickers(server.DB)
+	if err != nil {
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	// Fetch Stocks Prices
+	stocksPrices := []StockPrices{}
+	for _, ticker := range tickers {
+		resp, err := FetchDailyPrices(ticker, stocksPrices)
+		if err != nil {
+			c.Status(500).JSON(fiber.Map{"error": err.Error()})
+			return
+		}
+		prices := []Prices{}
+		err = json.Unmarshal(resp.Body(), &prices)
+		if err != nil {
+			c.Status(500).JSON(fiber.Map{"error": err.Error()})
+			return
+		}
+		stock := StockPrices{ticker, prices}
+		stocksPrices = append(stocksPrices, stock)
+	}
+	// Get Stocks records
+	items, err := item.FindStocksBetweenDates(server.DB, from, to)
+	if err != nil {
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	// Data Processing
+	daysBalance := []DayBalance{}
+	currentDay := DayBalance{}
+	stocksBalance := []StockBalance{}
+	date := ""
+	for _, record := range *items {
+		if date != record.Date {
+			if date != "" {
+				for _, stock := range stocksBalance {
+					for _, stockPrice := range stocksPrices {
+						if stock.Ticker == stockPrice.Ticker {
+							for _, price := range stockPrice.Prices {
+								if price.Date == currentDay.Date {
+									currentDay.Amount = currentDay.Amount + (int32(price.Price) * stock.StocksAmount)
+									break
+								}
+							}
+							break
+						}
+					}
+				}
+				daysBalance = append(daysBalance, currentDay)
+				currentDay = DayBalance{}
+				stocksBalance = []StockBalance{}
+			}
+		}
+		date = record.Date
+		currentDay.Date = record.Date
+		switch record.TransType {
+		case "CREDIT", "DIVIDEND":
+			currentDay.Amount = currentDay.Amount + int32(record.TotalAmount)
+		case "WITHDRAWAL":
+			currentDay.Amount = currentDay.Amount - int32(record.TotalAmount)
+		case "BUY", "SELL":
+			changed := false
+			for index, stock := range stocksBalance {
+				if stock.Ticker == record.Ticker {
+					stocksBalance[index].StocksAmount = stocksBalance[index].StocksAmount + record.StocksAmount
+					changed = true
+					break
+				}
+			}
+			if changed {
+				break
+			}
+			stockBalance := StockBalance{Ticker: record.Ticker, StocksAmount: record.StocksAmount}
+			stocksBalance = append(stocksBalance, stockBalance)
+		}
+	}
+	// Http response
+	c.JSON(daysBalance)
 }

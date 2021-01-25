@@ -30,6 +30,7 @@ func (s *Server) initializeRoutes() {
 	// GET My Stocks
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks", version), s.GetStocks)
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks/holdings", version), s.GetHoldings)
+	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks/portfolio/daily", version), s.GetPortfolioDaily)
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks/:id", version), s.GetStockByID)
 }
 

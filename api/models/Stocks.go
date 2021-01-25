@@ -171,6 +171,15 @@ func (r *Stock) FindTickers(db *gorm.DB) ([]string, error) {
 	return utils.RemoveDuplicateStrings(tickers), nil
 }
 
+func (r *Stock) FindStocksBetweenDates(db *gorm.DB, from string, to string) (*[]Stock, error) {
+	stocks := []Stock{}
+	err := db.Debug().Model(&Stock{}).Where("date BETWEEN ? AND ?", from, to).Order("date").Order("id").Find(&stocks).Error
+	if err != nil {
+		return &[]Stock{}, err
+	}
+	return &stocks, nil
+}
+
 func ReduceStockHolding(stocks []Stock) StockHolding {
 	var (
 		stocksAmount int32
