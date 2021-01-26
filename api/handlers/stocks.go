@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -230,10 +231,52 @@ func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
 	currentDay := DayBalance{}
 	stocksBalance := []StockBalance{}
 	date := ""
-	for _, record := range *items {
-		if date != record.Date {
+	itemsLength := len(*items) - 1
+	var balance int32
+	for index, record := range *items {
+		if date != record.Date || index == itemsLength {
 			if date != "" {
+				currentDay.Amount = currentDay.Amount + balance
+			}
+		}
+		switch record.TransType {
+		case "CREDIT", "DIVIDEND":
+			balance = balance + int32(math.Abs(float64(record.TotalAmount)))
+		case "WITHDRAWAL":
+			balance = balance - int32(math.Abs(float64(record.TotalAmount)))
+		case "BUY", "SELL":
+			changed := false
+			if record.TransType == "SELL" {
+				balance = balance + int32(math.Abs(float64(record.TotalAmount)))
+			} else {
+				balance = balance - int32(math.Abs(float64(record.TotalAmount)))
+			}
+			for index, stock := range stocksBalance {
+				if stock.Ticker == record.Ticker {
+					if record.TransType == "SELL" {
+						stocksBalance[index].StocksAmount = stocksBalance[index].StocksAmount - int32(math.Abs(float64(record.StocksAmount)))
+					} else {
+						stocksBalance[index].StocksAmount = stocksBalance[index].StocksAmount + int32(math.Abs(float64(record.StocksAmount)))
+					}
+					changed = true
+					break
+				}
+			}
+			if changed {
+				break
+			}
+			stockBalance := StockBalance{Ticker: record.Ticker, StocksAmount: record.StocksAmount}
+			stocksBalance = append(stocksBalance, stockBalance)
+		}
+		if date != record.Date || index == itemsLength {
+			if date != "" {
+				if index == itemsLength {
+					currentDay.Amount = balance
+				}
 				for _, stock := range stocksBalance {
+					if stock.StocksAmount < 0 {
+						continue
+					}
 					for _, stockPrice := range stocksPrices {
 						if stock.Ticker == stockPrice.Ticker {
 							for _, price := range stockPrice.Prices {
@@ -248,31 +291,10 @@ func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
 				}
 				daysBalance = append(daysBalance, currentDay)
 				currentDay = DayBalance{}
-				stocksBalance = []StockBalance{}
 			}
 		}
-		date = record.Date
 		currentDay.Date = record.Date
-		switch record.TransType {
-		case "CREDIT", "DIVIDEND":
-			currentDay.Amount = currentDay.Amount + int32(record.TotalAmount)
-		case "WITHDRAWAL":
-			currentDay.Amount = currentDay.Amount - int32(record.TotalAmount)
-		case "BUY", "SELL":
-			changed := false
-			for index, stock := range stocksBalance {
-				if stock.Ticker == record.Ticker {
-					stocksBalance[index].StocksAmount = stocksBalance[index].StocksAmount + record.StocksAmount
-					changed = true
-					break
-				}
-			}
-			if changed {
-				break
-			}
-			stockBalance := StockBalance{Ticker: record.Ticker, StocksAmount: record.StocksAmount}
-			stocksBalance = append(stocksBalance, stockBalance)
-		}
+		date = record.Date
 	}
 	// Http response
 	c.JSON(daysBalance)

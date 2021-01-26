@@ -58,7 +58,8 @@ DELETE:/api/myfins/v%[1]v/stocks/:id
 Get Stocks
 GET:/api/myfins/v%[1]v/stocks
 GET:/api/myfins/v%[1]v/stocks/:id
-GET:/api/myfins/v%[1]v/stocks/holdings`
+GET:/api/myfins/v%[1]v/stocks/holdings
+GET:/api/myfins/v%[1]v/stocks/portfolio/daily?from=YYYY-MM-DD&to=YYYY-MM-DD`
 
 	msg = fmt.Sprintf(msg, version)
 	c.SendString(msg)
