@@ -115,7 +115,7 @@ func (t *Transaction) Validate() error {
 
 func (t *Transaction) SaveTransaction(db *gorm.DB) (*Transaction, error) {
 	var err error
-	err = db.Debug().Model(&Transaction{}).Create(&t).Error
+	err = db.Model(&Transaction{}).Create(&t).Error
 	if err != nil {
 		return &Transaction{}, err
 	}
@@ -124,7 +124,7 @@ func (t *Transaction) SaveTransaction(db *gorm.DB) (*Transaction, error) {
 
 func (t *Transaction) UpdateATransaction(db *gorm.DB, id uint64) (*Transaction, error) {
 	var err error
-	err = db.Debug().Model(&Transaction{}).Where("id = ?", id).Updates(&t).Error
+	err = db.Model(&Transaction{}).Where("id = ?", id).Updates(&t).Error
 	if err != nil {
 		return &Transaction{}, err
 	}
@@ -132,7 +132,7 @@ func (t *Transaction) UpdateATransaction(db *gorm.DB, id uint64) (*Transaction, 
 }
 
 func (t *Transaction) DeleteATransaction(db *gorm.DB, id uint64) (int64, error) {
-	db = db.Debug().Model(&Transaction{}).Where("id = ?", id).Take(&Transaction{}).Delete(&Transaction{})
+	db = db.Model(&Transaction{}).Where("id = ?", id).Take(&Transaction{}).Delete(&Transaction{})
 	if db.Error != nil {
 		if gorm.IsRecordNotFoundError(db.Error) {
 			return 0, errors.New("Transaction not found.")
@@ -145,7 +145,7 @@ func (t *Transaction) DeleteATransaction(db *gorm.DB, id uint64) (int64, error) 
 func (t *Transaction) FindAllTransactions(db *gorm.DB) (*[]Transaction, error) {
 	var err error
 	transactions := []Transaction{}
-	err = db.Debug().Model(&Transaction{}).Order("date desc").Order("id desc").Find(&transactions).Error
+	err = db.Model(&Transaction{}).Order("date desc").Order("id desc").Find(&transactions).Error
 	if err != nil {
 		return &[]Transaction{}, err
 	}
@@ -154,7 +154,7 @@ func (t *Transaction) FindAllTransactions(db *gorm.DB) (*[]Transaction, error) {
 
 func (t *Transaction) FindTransactionByID(db *gorm.DB, id uint64) (*Transaction, error) {
 	var err error
-	err = db.Debug().Model(&Transaction{}).Where("id = ?", id).Take(&t).Error
+	err = db.Model(&Transaction{}).Where("id = ?", id).Take(&t).Error
 	if err != nil {
 		return &Transaction{}, err
 	}
@@ -164,7 +164,7 @@ func (t *Transaction) FindTransactionByID(db *gorm.DB, id uint64) (*Transaction,
 // func (t *Transaction) FindTransactionsByType(db *gorm.DB, typeTrans string) (*[]Transaction, error) {
 // 	var err error
 // 	transactions := []Transaction{}
-// 	err = db.Debug().Model(&Transaction{}).Where("type = ?", typeTrans).Find(&transactions).Error
+// 	err = db.Model(&Transaction{}).Where("type = ?", typeTrans).Find(&transactions).Error
 // 	if err != nil {
 // 		return &[]Transaction{}, err
 // 	}
@@ -173,7 +173,7 @@ func (t *Transaction) FindTransactionByID(db *gorm.DB, id uint64) (*Transaction,
 
 func (t *Transaction) FindTransactionsBetweenDates(db *gorm.DB, from string, to string) (*[]Transaction, error) {
 	transactions := []Transaction{}
-	err := db.Debug().Model(&Transaction{}).Where("date BETWEEN ? AND ?", from, to).Order("date desc").Order("id desc").Find(&transactions).Error
+	err := db.Model(&Transaction{}).Where("date BETWEEN ? AND ?", from, to).Order("date desc").Order("id desc").Find(&transactions).Error
 	if err != nil {
 		return &[]Transaction{}, err
 	}
@@ -182,16 +182,17 @@ func (t *Transaction) FindTransactionsBetweenDates(db *gorm.DB, from string, to 
 
 func (t *Transaction) FindLastTransaction(db *gorm.DB) (*Transaction, error) {
 	var err error
-	err = db.Debug().Model(&Transaction{}).Last(&t).Error
+	err = db.Model(&Transaction{}).Last(&t).Error
 	if err != nil {
 		return &Transaction{}, err
 	}
 	return t, nil
 }
+
 func (r *Transaction) FindAllCategories(db *gorm.DB) ([]string, error) {
 	var err error
 	transactions := []Transaction{}
-	err = db.Debug().Model(&Transaction{}).Select("category").Not("category = ?", "").Find(&transactions).Error
+	err = db.Model(&Transaction{}).Select("category").Not("category = ?", "").Find(&transactions).Error
 	if err != nil {
 		return []string{}, err
 	}

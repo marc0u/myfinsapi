@@ -2,13 +2,15 @@ package handlers
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/gofiber/fiber"
 )
 
-func (s *Server) initializeRoutes() {
-	version := os.Getenv("API_VERSION")[0:1]
+var apiVersion string
+
+func (s *Server) initializeRoutes(version string) {
+	apiVersion = version
+	version = version[0:1]
 	// Help
 	s.Router.Get("/help", s.Help)
 	// Handle Transactions
@@ -35,8 +37,10 @@ func (s *Server) initializeRoutes() {
 }
 
 func (server *Server) Help(c *fiber.Ctx) {
-	version := os.Getenv("API_VERSION")[0:1]
-	var msg = `Handle Transations
+	version := apiVersion[0:1]
+	var msg = `MyfinsAPI v%v
+	
+Handle Transations
 POST:/api/myfins/v%[1]v/transactions
 PUT:/api/myfins/v%[1]v/transactions/:id
 DELETE:/api/myfins/v%[1]v/transactions/:id

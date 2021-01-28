@@ -129,13 +129,13 @@ func (r *Stock) Validate() error {
 func (r *Stock) SaveAStock(db *gorm.DB) (*Stock, error) {
 	var err error
 	item := Stock{}
-	err = db.Debug().Model(&Stock{}).Last(&item).Error
+	err = db.Model(&Stock{}).Last(&item).Error
 	if r.TransType == "BUY" || r.TransType == "WITHDRAWAL" {
 		r.Balance = item.Balance - r.TotalAmount
 	} else {
 		r.Balance = item.Balance + r.TotalAmount
 	}
-	err = db.Debug().Model(&Stock{}).Create(&r).Error
+	err = db.Model(&Stock{}).Create(&r).Error
 	if err != nil {
 		return &Stock{}, err
 	}
@@ -144,7 +144,7 @@ func (r *Stock) SaveAStock(db *gorm.DB) (*Stock, error) {
 
 func (r *Stock) UpdateAStock(db *gorm.DB, id uint64) (*Stock, error) {
 	var err error
-	err = db.Debug().Model(&Stock{}).Where("id = ?", id).Updates(&r).Error
+	err = db.Model(&Stock{}).Where("id = ?", id).Updates(&r).Error
 	if err != nil {
 		return &Stock{}, err
 	}
@@ -152,7 +152,7 @@ func (r *Stock) UpdateAStock(db *gorm.DB, id uint64) (*Stock, error) {
 }
 
 func (r *Stock) DeleteAStock(db *gorm.DB, id uint64) (int64, error) {
-	db = db.Debug().Model(&Stock{}).Where("id = ?", id).Take(&Stock{}).Delete(&Stock{})
+	db = db.Model(&Stock{}).Where("id = ?", id).Take(&Stock{}).Delete(&Stock{})
 	if db.Error != nil {
 		if gorm.IsRecordNotFoundError(db.Error) {
 			return 0, errors.New("Stock not found.")
@@ -166,9 +166,9 @@ func (r *Stock) FindAllStocks(db *gorm.DB, desc string) (*[]Stock, error) {
 	var err error
 	stocks := []Stock{}
 	if desc == "false" {
-		err = db.Debug().Model(&Stock{}).Order("date").Order("id").Find(&stocks).Error
+		err = db.Model(&Stock{}).Order("date").Order("id").Find(&stocks).Error
 	} else {
-		err = db.Debug().Model(&Stock{}).Order("date desc").Order("id desc").Find(&stocks).Error
+		err = db.Model(&Stock{}).Order("date desc").Order("id desc").Find(&stocks).Error
 	}
 	if err != nil {
 		return &[]Stock{}, err
@@ -178,7 +178,7 @@ func (r *Stock) FindAllStocks(db *gorm.DB, desc string) (*[]Stock, error) {
 
 func (r *Stock) FindStockByID(db *gorm.DB, id uint64) (*Stock, error) {
 	var err error
-	err = db.Debug().Model(&Stock{}).Where("id = ?", id).Take(&r).Error
+	err = db.Model(&Stock{}).Where("id = ?", id).Take(&r).Error
 	if err != nil {
 		return &Stock{}, err
 	}
@@ -188,7 +188,7 @@ func (r *Stock) FindStockByID(db *gorm.DB, id uint64) (*Stock, error) {
 func (r *Stock) FindStocksByTicker(db *gorm.DB, ticker string) (*[]Stock, error) {
 	var err error
 	stocks := []Stock{}
-	err = db.Debug().Model(&Stock{}).Where("ticker = ?", ticker).Find(&stocks).Error
+	err = db.Model(&Stock{}).Where("ticker = ?", ticker).Find(&stocks).Error
 	if err != nil {
 		return &[]Stock{}, err
 	}
@@ -198,7 +198,7 @@ func (r *Stock) FindStocksByTicker(db *gorm.DB, ticker string) (*[]Stock, error)
 func (r *Stock) FindTickers(db *gorm.DB) ([]string, error) {
 	var err error
 	stocks := []Stock{}
-	err = db.Debug().Model(&Stock{}).Select("ticker").Not("ticker = ?", "").Find(&stocks).Error
+	err = db.Model(&Stock{}).Select("ticker").Not("ticker = ?", "").Find(&stocks).Error
 	if err != nil {
 		return []string{}, err
 	}
@@ -211,11 +211,20 @@ func (r *Stock) FindTickers(db *gorm.DB) ([]string, error) {
 
 func (r *Stock) FindStocksBetweenDates(db *gorm.DB, from string, to string) (*[]Stock, error) {
 	stocks := []Stock{}
-	err := db.Debug().Model(&Stock{}).Where("date BETWEEN ? AND ?", from, to).Order("date").Order("id").Find(&stocks).Error
+	err := db.Model(&Stock{}).Where("date BETWEEN ? AND ?", from, to).Order("date").Order("id").Find(&stocks).Error
 	if err != nil {
 		return &[]Stock{}, err
 	}
 	return &stocks, nil
+}
+
+func (r *Stock) FindLastRecord(db *gorm.DB) (*Stock, error) {
+	var err error
+	err = db.Model(&Transaction{}).Last(&r).Error
+	if err != nil {
+		return &Stock{}, err
+	}
+	return r, nil
 }
 
 func ReduceStocksAmount(stocks []Stock) StockHolding {
@@ -278,7 +287,7 @@ func FindStockPricesByDate(date string, prices []Price) (Price, error) {
 // func (r *Stock) FindStocksHolings(db *gorm.DB) (*[]Stock, error) {
 // 	var err error
 // 	stocks := []Stock{}
-// 	err = db.Debug().Model(&Stock{}).Order("date").Not("ticker = ?", "").Find(&stocks).Error
+// 	err = db.Model(&Stock{}).Order("date").Not("ticker = ?", "").Find(&stocks).Error
 // 	if err != nil {
 // 		return &[]Stock{}, err
 // 	}

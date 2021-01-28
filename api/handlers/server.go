@@ -3,6 +3,8 @@ package handlers
 import (
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/gofiber/cors"
 	"github.com/gofiber/fiber"
@@ -50,13 +52,16 @@ func (server *Server) InitializeDB(Dbdriver, DbUser, DbPassword, DbPort, DbHost,
 		}
 		server.DB.Exec("PRAGMA foreign_keys = ON")
 	}
-	server.DB.Debug().AutoMigrate(&models.Transaction{}) //database migration
-	server.DB.Debug().AutoMigrate(&models.Stock{})       //database migration
+	if strings.ToLower(os.Getenv("DB_DEBUG")) == "true" {
+		server.DB = server.DB.Debug()
+	}
+	server.DB.AutoMigrate(&models.Transaction{}) //database migration
+	server.DB.AutoMigrate(&models.Stock{})       //database migration
 }
 
-func (server *Server) RunServer(addr string) {
+func (server *Server) RunServer(addr, version string) {
 	server.Router = fiber.New()
 	server.Router.Use(cors.New())
-	server.initializeRoutes()
+	server.initializeRoutes(version)
 	log.Fatal(server.Router.Listen(addr))
 }

@@ -127,7 +127,19 @@ func (server *Server) GetHoldings(c *fiber.Ctx) {
 		c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
+	balance, err := item.FindLastRecord(server.DB)
+	if err != nil {
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
 	items := []models.StockHolding{}
+	items = append(items, models.StockHolding{
+		Date:        balance.Date,
+		Ticker:      "CASH",
+		TotalAmount: balance.Balance,
+		Country:     balance.Country,
+		Currency:    balance.Currency,
+	})
 	for _, ticker := range tickers {
 		result, err := item.FindStocksByTicker(server.DB, ticker)
 		if err != nil {
