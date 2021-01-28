@@ -254,7 +254,7 @@ func FetchStocksPrices(tickers []string) ([]StockPrices, error) {
 }
 
 func FetchDailyPrices(ticker string) ([]Price, error) {
-	urlBase := fmt.Sprintf("http://rancher.loc:7002/api/stocks/v2/cl/day/%v", ticker)
+	urlBase := fmt.Sprintf("http://192.168.1.15:7002/api/stocks/v2/cl/day/%v", ticker)
 	client := resty.New()
 	resp, err := client.
 		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}).
