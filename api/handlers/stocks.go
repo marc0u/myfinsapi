@@ -2,14 +2,12 @@ package handlers
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
 	"time"
 
 	"github.com/marc0u/myfinsapi/api/models"
-	"github.com/marc0u/myfinsapi/api/utils"
 
 	"github.com/gofiber/fiber"
 
@@ -94,7 +92,7 @@ func (server *Server) DeleteStock(c *fiber.Ctx) {
 func (server *Server) GetStocks(c *fiber.Ctx) {
 	// Getting data
 	item := models.Stock{}
-	items, err := item.FindAllStocks(server.DB)
+	items, err := item.FindAllStocks(server.DB, c.Query("desc"))
 	if err != nil {
 		c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		return
@@ -136,38 +134,22 @@ func (server *Server) GetHoldings(c *fiber.Ctx) {
 			c.Status(500).JSON(fiber.Map{"error": err.Error()})
 			return
 		}
-		holding := models.ReduceStockHolding(*result)
-		if holding.StocksAmount != 0 {
+		holding := models.ReduceStocksAmount(*result)
+		if holding.StocksAmount > 0 {
+			prices, err := models.FetchDailyPrices(ticker)
+			if err != nil {
+				c.Status(500).JSON(fiber.Map{"error": err.Error()})
+				return
+			}
+			lastPrice := prices[len(prices)-1]
+			holding.Date = lastPrice.Date
+			holding.StockPrice = lastPrice.Price
+			holding.TotalAmount = math.Round(float64(holding.StocksAmount)*holding.StockPrice*100) / 100
 			items = append(items, holding)
 		}
 	}
 	// Http response
 	c.JSON(items)
-}
-
-type StockBalance struct {
-	Ticker       string
-	StocksAmount int32
-}
-
-type Balance struct {
-	Cash   int32
-	Stocks []StockBalance
-}
-
-type DayBalance struct {
-	Date   string
-	Amount int32
-}
-
-type Prices struct {
-	Date  string  `json:"Date"`
-	Price float32 `json:"Close"`
-}
-
-type StockPrices struct {
-	Ticker string
-	Prices []Prices
 }
 
 func FetchDailyPrices(ticker string, result interface{}) (*resty.Response, error) {
@@ -190,12 +172,12 @@ func FetchDailyPrices(ticker string, result interface{}) (*resty.Response, error
 }
 
 func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
-	// Getting URL parameters
-	from, to, err := utils.ParseFromToDates(c.Query("from"), c.Query("to"))
-	if err != nil {
-		c.Status(400).JSON(fiber.Map{"error": err.Error()})
-		return
-	}
+	// // Getting URL parameters
+	// from, to, err := utils.ParseFromToDates(c.Query("from"), c.Query("to"))
+	// if err != nil {
+	// 	c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	// 	return
+	// }
 	// Getting Portfolio Tickers
 	item := models.Stock{}
 	tickers, err := item.FindTickers(server.DB)
@@ -204,32 +186,22 @@ func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
 		return
 	}
 	// Fetch Stocks Prices
-	stocksPrices := []StockPrices{}
-	for _, ticker := range tickers {
-		resp, err := FetchDailyPrices(ticker, stocksPrices)
-		if err != nil {
-			c.Status(500).JSON(fiber.Map{"error": err.Error()})
-			return
-		}
-		prices := []Prices{}
-		err = json.Unmarshal(resp.Body(), &prices)
-		if err != nil {
-			c.Status(500).JSON(fiber.Map{"error": err.Error()})
-			return
-		}
-		stock := StockPrices{ticker, prices}
-		stocksPrices = append(stocksPrices, stock)
+	stocksPrices, err := models.FetchStocksPrices(tickers)
+	if err != nil {
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return
 	}
 	// Get Stocks records
-	items, err := item.FindStocksBetweenDates(server.DB, from, to)
+	// items, err := item.FindStocksBetweenDates(server.DB, from, to)
+	items, err := item.FindAllStocks(server.DB, "false")
 	if err != nil {
 		c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Data Processing
-	daysBalance := []DayBalance{}
-	currentDay := DayBalance{}
-	stocksBalance := []StockBalance{}
+	daysBalance := []models.DayBalance{}
+	currentDay := models.DayBalance{}
+	stocksBalance := []models.StockBalance{}
 	date := ""
 	itemsLength := len(*items) - 1
 	var balance int32
@@ -265,7 +237,7 @@ func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
 			if changed {
 				break
 			}
-			stockBalance := StockBalance{Ticker: record.Ticker, StocksAmount: record.StocksAmount}
+			stockBalance := models.StockBalance{Ticker: record.Ticker, StocksAmount: record.StocksAmount}
 			stocksBalance = append(stocksBalance, stockBalance)
 		}
 		if date != record.Date || index == itemsLength {
@@ -279,18 +251,17 @@ func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
 					}
 					for _, stockPrice := range stocksPrices {
 						if stock.Ticker == stockPrice.Ticker {
-							for _, price := range stockPrice.Prices {
-								if price.Date == currentDay.Date {
-									currentDay.Amount = currentDay.Amount + (int32(price.Price) * stock.StocksAmount)
-									break
-								}
+							price, _ := models.FindStockPricesByDate(currentDay.Date, stockPrice.Prices)
+							if price.Date != "" {
+								currentDay.Amount = currentDay.Amount + (int32(price.Price) * stock.StocksAmount)
+								break
 							}
 							break
 						}
 					}
 				}
 				daysBalance = append(daysBalance, currentDay)
-				currentDay = DayBalance{}
+				currentDay = models.DayBalance{}
 			}
 		}
 		currentDay.Date = record.Date

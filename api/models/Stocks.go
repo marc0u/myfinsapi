@@ -1,11 +1,16 @@
 package models
 
 import (
+	"crypto/tls"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"html"
 	"math"
 	"strings"
+	"time"
 
+	"github.com/go-resty/resty"
 	"github.com/jinzhu/gorm"
 	"github.com/marc0u/myfinsapi/api/utils"
 )
@@ -24,6 +29,7 @@ type Stock struct {
 }
 
 type StockHolding struct {
+	Date         string  `gorm:"not null" json:"date"`
 	Ticker       string  `gorm:"size:10" json:"ticker"`
 	StocksAmount int32   `json:"stocks_amount"`
 	StockPrice   float64 `json:"stock_price"`
@@ -32,20 +38,48 @@ type StockHolding struct {
 	Currency     string  `gorm:"not null; size:10" json:"currency"`
 }
 
+type StockPrices struct {
+	Ticker string
+	Prices []Price
+}
+
+type Price struct {
+	Date  string  `json:"Date"`
+	Price float64 `json:"Close"`
+}
+
+type StockBalance struct {
+	Ticker       string
+	StocksAmount int32
+}
+
+type Balance struct {
+	Cash   int32
+	Stocks []StockBalance
+}
+
+type DayBalance struct {
+	Date   string
+	Amount int32
+}
+
 func (r *Stock) Prepare() {
 	r.ID = 0
-	r.Ticker = html.EscapeString(strings.ToUpper(strings.TrimSpace(r.Ticker)))
 	r.TransType = html.EscapeString(strings.ToUpper(strings.TrimSpace(r.TransType)))
 	r.Country = html.EscapeString(strings.ToUpper(strings.TrimSpace(r.Country)))
 	r.Currency = html.EscapeString(strings.ToUpper(strings.TrimSpace(r.Currency)))
+	r.TotalAmount = math.Round(r.TotalAmount*100) / 100
 	if r.TransType == "SELL" || r.TransType == "BUY" {
+		r.Ticker = html.EscapeString(strings.ToUpper(strings.TrimSpace(r.Ticker)))
 		if r.TransType == "SELL" {
 			r.StocksAmount = int32(math.Abs(float64(r.StocksAmount))) * -1
+			r.TotalAmount = math.Abs(r.TotalAmount)
 		}
 		if r.TransType == "BUY" {
 			r.StocksAmount = int32(math.Abs(float64(r.StocksAmount)))
+			r.TotalAmount = math.Abs(r.TotalAmount) * -1
 		}
-		r.StockPrice = math.Abs(r.TotalAmount / float64(r.StocksAmount))
+		r.StockPrice = math.Round(math.Abs(r.TotalAmount/float64(r.StocksAmount))*100) / 100
 		return
 	}
 	r.Ticker = ""
@@ -128,10 +162,14 @@ func (r *Stock) DeleteAStock(db *gorm.DB, id uint64) (int64, error) {
 	return db.RowsAffected, nil
 }
 
-func (r *Stock) FindAllStocks(db *gorm.DB) (*[]Stock, error) {
+func (r *Stock) FindAllStocks(db *gorm.DB, desc string) (*[]Stock, error) {
 	var err error
 	stocks := []Stock{}
-	err = db.Debug().Model(&Stock{}).Order("date desc").Order("id desc").Find(&stocks).Error
+	if desc == "false" {
+		err = db.Debug().Model(&Stock{}).Order("date").Order("id").Find(&stocks).Error
+	} else {
+		err = db.Debug().Model(&Stock{}).Order("date desc").Order("id desc").Find(&stocks).Error
+	}
 	if err != nil {
 		return &[]Stock{}, err
 	}
@@ -180,29 +218,61 @@ func (r *Stock) FindStocksBetweenDates(db *gorm.DB, from string, to string) (*[]
 	return &stocks, nil
 }
 
-func ReduceStockHolding(stocks []Stock) StockHolding {
-	var (
-		stocksAmount int32
-		totalAmount  float64
-		stockPrice   float64
-	)
+func ReduceStocksAmount(stocks []Stock) StockHolding {
+	var stocksAmount int32
 	for _, stock := range stocks {
 		stocksAmount = stocksAmount + stock.StocksAmount
-		if stocksAmount == 0 {
-			totalAmount = 0.0
-			continue
-		}
-		totalAmount = totalAmount + stock.TotalAmount
 	}
-	if stocksAmount != 0 {
-		stockPrice = totalAmount / float64(stocksAmount)
-	}
-	return StockHolding{Ticker: stocks[0].Ticker,
+	return StockHolding{
+		Ticker:       stocks[0].Ticker,
 		StocksAmount: stocksAmount,
-		StockPrice:   stockPrice,
-		TotalAmount:  totalAmount,
 		Country:      stocks[0].Country,
 		Currency:     stocks[0].Currency}
+}
+
+func FetchStocksPrices(tickers []string) ([]StockPrices, error) {
+	// Fetch Stocks Prices
+	stocksPrices := []StockPrices{}
+	for _, ticker := range tickers {
+		prices, err := FetchDailyPrices(ticker)
+		if err != nil {
+			return nil, err
+		}
+		stock := StockPrices{ticker, prices}
+		stocksPrices = append(stocksPrices, stock)
+	}
+	return stocksPrices, nil
+}
+
+func FetchDailyPrices(ticker string) ([]Price, error) {
+	urlBase := fmt.Sprintf("http://rancher.loc:7002/api/stocks/v2/cl/day/%v", ticker)
+	client := resty.New()
+	resp, err := client.
+		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}).
+		SetRetryCount(3).
+		SetRetryWaitTime(3 * time.Second).
+		SetRetryMaxWaitTime(5 * time.Second).
+		SetTimeout(10 * time.Second).
+		R().
+		Get(urlBase)
+	if err != nil {
+		return nil, err
+	}
+	prices := []Price{}
+	err = json.Unmarshal(resp.Body(), &prices)
+	if err != nil {
+		return nil, err
+	}
+	return prices, nil
+}
+
+func FindStockPricesByDate(date string, prices []Price) (Price, error) {
+	for _, price := range prices {
+		if price.Date == date {
+			return price, nil
+		}
+	}
+	return Price{}, errors.New("Stock not found")
 }
 
 // func (r *Stock) FindStocksHolings(db *gorm.DB) (*[]Stock, error) {
