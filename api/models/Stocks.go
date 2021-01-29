@@ -44,16 +44,19 @@ type StockPrices struct {
 }
 
 type Price struct {
-	Date  string  `json:"Date"`
-	Price float64 `json:"Close"`
+	Date  string  `json:"date"`
+	Price float64 `json:"close"`
 }
 
 type StockBalance struct {
 	Ticker       string
 	StocksAmount int32
+	StockPrice   float64
+	TotalAmount  float64
 }
 
 type Balance struct {
+	Date   string
 	Cash   int32
 	Stocks []StockBalance
 }
