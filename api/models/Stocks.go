@@ -1,16 +1,11 @@
 package models
 
 import (
-	"crypto/tls"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"html"
 	"math"
 	"strings"
-	"time"
 
-	"github.com/go-resty/resty"
 	"github.com/jinzhu/gorm"
 	"github.com/marc0u/myfinsapi/api/utils"
 )
@@ -36,34 +31,6 @@ type StockHolding struct {
 	TotalAmount  float64 `gorm:"not null" json:"total_amount"`
 	Country      string  `gorm:"not null; size:20" json:"country"`
 	Currency     string  `gorm:"not null; size:10" json:"currency"`
-}
-
-type StockPrices struct {
-	Ticker string
-	Prices []Price
-}
-
-type Price struct {
-	Date  string  `json:"date"`
-	Price float64 `json:"close"`
-}
-
-type StockBalance struct {
-	Ticker       string
-	StocksAmount int32
-	StockPrice   float64
-	TotalAmount  float64
-}
-
-type Balance struct {
-	Date   string
-	Cash   int32
-	Stocks []StockBalance
-}
-
-type DayBalance struct {
-	Date   string
-	Amount int32
 }
 
 func (r *Stock) Prepare() {
@@ -240,51 +207,6 @@ func ReduceStocksAmount(stocks []Stock) StockHolding {
 		StocksAmount: stocksAmount,
 		Country:      stocks[0].Country,
 		Currency:     stocks[0].Currency}
-}
-
-func FetchStocksPrices(tickers []string) ([]StockPrices, error) {
-	// Fetch Stocks Prices
-	stocksPrices := []StockPrices{}
-	for _, ticker := range tickers {
-		prices, err := FetchDailyPrices(ticker)
-		if err != nil {
-			return nil, err
-		}
-		stock := StockPrices{ticker, prices}
-		stocksPrices = append(stocksPrices, stock)
-	}
-	return stocksPrices, nil
-}
-
-func FetchDailyPrices(ticker string) ([]Price, error) {
-	urlBase := fmt.Sprintf("http://192.168.1.15:7002/api/stocks/v2/cl/day/%v", ticker)
-	client := resty.New()
-	resp, err := client.
-		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}).
-		SetRetryCount(3).
-		SetRetryWaitTime(3 * time.Second).
-		SetRetryMaxWaitTime(5 * time.Second).
-		SetTimeout(10 * time.Second).
-		R().
-		Get(urlBase)
-	if err != nil {
-		return nil, err
-	}
-	prices := []Price{}
-	err = json.Unmarshal(resp.Body(), &prices)
-	if err != nil {
-		return nil, err
-	}
-	return prices, nil
-}
-
-func FindStockPricesByDate(date string, prices []Price) (Price, error) {
-	for _, price := range prices {
-		if price.Date == date {
-			return price, nil
-		}
-	}
-	return Price{}, errors.New("Stock not found")
 }
 
 // func (r *Stock) FindStocksHolings(db *gorm.DB) (*[]Stock, error) {

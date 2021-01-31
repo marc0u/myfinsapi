@@ -3,9 +3,9 @@ package handlers
 import (
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/marc0u/myfinsapi/api/models"
@@ -165,100 +165,58 @@ func (server *Server) GetHoldings(c *fiber.Ctx) {
 	c.JSON(items)
 }
 
-func FetchDailyPrices(ticker string, result interface{}) (*resty.Response, error) {
-	urlBase := fmt.Sprintf("http://rancher.loc:7002/api/stocks/v2/cl/day/%v", ticker)
-	client := resty.New()
-	resp, err := client.
-		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}).
-		SetRetryCount(3).
-		SetRetryWaitTime(3 * time.Second).
-		SetRetryMaxWaitTime(5 * time.Second).
-		SetTimeout(10 * time.Second).
-		R().
-		SetResult(&result).
-		ForceContentType("application/json").
-		Get(urlBase)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
 func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
-	// // Getting URL parameters
-	// from, to, err := utils.ParseFromToDates(c.Query("from"), c.Query("to"))
-	// if err != nil {
-	// 	c.Status(400).JSON(fiber.Map{"error": err.Error()})
-	// 	return
-	// }
-	// // Getting Portfolio Tickers
+	// Getting Portfolio Tickers
 	item := models.Stock{}
-	// tickers, err := item.FindTickers(server.DB)
-	// if err != nil {
-	// 	c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	// 	return
-	// }
-	// // Fetch Stocks Prices
-	// stocksPrices, err := models.FetchStocksPrices(tickers)
-	// if err != nil {
-	// 	c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	// 	return
-	// }
+	tickers, err := item.FindTickers(server.DB)
+	if err != nil {
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	// Fetch Stocks Prices
+	stocksPrices, err := models.FetchStocksPrices(tickers)
+	if err != nil {
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
 	// Get Stocks records
-	// items, err := item.FindStocksBetweenDates(server.DB, from, to)
 	items, err := item.FindAllStocks(server.DB, "false")
 	if err != nil {
 		c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
-	// Data Processing
-	// daysBalance := []models.DayBalance{}
-	// currentDay := models.DayBalance{}
-	// stocksBalance := []models.StockBalance{}
+	// Process Detailed Balance
 	itemsLength := len(*items) - 1
 	balance := []models.Balance{}
 	dayBalance := models.Balance{}
 	for index, record := range *items {
 		if dayBalance.Date != record.Date && index < itemsLength {
 			if dayBalance.Date != "" {
-				balance = append(balance, dayBalance)
-			}
-		}
-		dayBalance.Date = record.Date
-		switch record.TransType {
-		case "CREDIT", "DIVIDEND":
-			dayBalance.Cash = dayBalance.Cash + int32(math.Abs(float64(record.TotalAmount)))
-		case "WITHDRAWAL":
-			dayBalance.Cash = dayBalance.Cash - int32(math.Abs(float64(record.TotalAmount)))
-		case "BUY", "SELL":
-			changed := false
-			if record.TransType == "SELL" {
-				dayBalance.Cash = dayBalance.Cash + int32(math.Abs(float64(record.TotalAmount)))
-			} else {
-				dayBalance.Cash = dayBalance.Cash - int32(math.Abs(float64(record.TotalAmount)))
-			}
-			for index, stock := range dayBalance.Stocks {
-				if stock.Ticker == record.Ticker {
-					if record.TransType == "SELL" {
-						dayBalance.Stocks[index].StocksAmount = dayBalance.Stocks[index].StocksAmount - int32(math.Abs(float64(record.StocksAmount)))
-					} else {
-						dayBalance.Stocks[index].StocksAmount = dayBalance.Stocks[index].StocksAmount + int32(math.Abs(float64(record.StocksAmount)))
-					}
-					changed = true
-					break
+				err := dayBalance.PrepareStocks(tickers, stocksPrices)
+				if err != nil {
+					c.Status(500).JSON(fiber.Map{"error": err.Error()})
+					return
 				}
+				balance = append(balance, models.Balance{Date: dayBalance.Date, Cash: dayBalance.Cash})
+				balance[len(balance)-1].Stocks = append(balance[len(balance)-1].Stocks, dayBalance.Stocks...)
 			}
-			if changed {
-				break
-			}
-			stockBalance := models.StockBalance{Ticker: record.Ticker, StocksAmount: record.StocksAmount}
-			dayBalance.Stocks = append(dayBalance.Stocks, stockBalance)
 		}
+		dayBalance.PrepareCash(record)
 		if index == itemsLength {
-			balance = append(balance, dayBalance)
+			err := dayBalance.PrepareStocks(tickers, stocksPrices)
+			if err != nil {
+				c.Status(500).JSON(fiber.Map{"error": err.Error()})
+				return
+			}
+			balance = append(balance, models.Balance{Date: dayBalance.Date, Cash: dayBalance.Cash})
+			balance[len(balance)-1].Stocks = append(balance[len(balance)-1].Stocks, dayBalance.Stocks...)
 		}
 	}
-	c.JSON(balance)
+	if strings.ToLower(c.Query("detail")) == "detailed" {
+		c.JSON(balance)
+		return
+	}
+
 	// if date != record.Date || index == itemsLength {
 	// 	if date != "" {
 	// 		if index == itemsLength {
