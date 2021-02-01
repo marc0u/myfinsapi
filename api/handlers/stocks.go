@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -166,19 +167,19 @@ func (server *Server) GetHoldings(c *fiber.Ctx) {
 }
 
 func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
-	// Getting Portfolio Tickers
+	// // Getting Portfolio Tickers
 	item := models.Stock{}
-	tickers, err := item.FindTickers(server.DB)
-	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
-	}
-	// Fetch Stocks Prices
-	stocksPrices, err := models.FetchStocksPrices(tickers)
-	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
-	}
+	// tickers, err := item.FindTickers(server.DB)
+	// if err != nil {
+	// 	c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	// 	return
+	// }
+	// // Fetch Stocks Prices
+	// stocksPrices, err := models.FetchStocksPrices(tickers)
+	// if err != nil {
+	// 	c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	// 	return
+	// }
 	// Get Stocks records
 	items, err := item.FindAllStocks(server.DB, "false")
 	if err != nil {
@@ -192,7 +193,7 @@ func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
 	for index, record := range *items {
 		if dayBalance.Date != record.Date && index < itemsLength {
 			if dayBalance.Date != "" {
-				err := dayBalance.PrepareStocks(tickers, stocksPrices)
+				dayBalance.RemoveEmptyStocks()
 				if err != nil {
 					c.Status(500).JSON(fiber.Map{"error": err.Error()})
 					return
@@ -203,7 +204,7 @@ func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
 		}
 		dayBalance.PrepareCash(record)
 		if index == itemsLength {
-			err := dayBalance.PrepareStocks(tickers, stocksPrices)
+			dayBalance.RemoveEmptyStocks()
 			if err != nil {
 				c.Status(500).JSON(fiber.Map{"error": err.Error()})
 				return
@@ -212,10 +213,49 @@ func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
 			balance[len(balance)-1].Stocks = append(balance[len(balance)-1].Stocks, dayBalance.Stocks...)
 		}
 	}
+	// Fill dates between daily balance
+	date, err := time.Parse("2006-01-02", balance[0].Date)
+	if err != nil {
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	endDate := time.Now()
+	endDate = time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 0, 0, 0, 0, time.UTC)
+	fmt.Println(endDate)
+	itemsLength = len(balance)
+	for i := 0; date.Before(endDate); i++ {
+		dateDayBalance := time.Time{}
+		if i < itemsLength {
+			dateDayBalance, err = time.Parse("2006-01-02", balance[i].Date)
+		}
+		if err != nil {
+			c.Status(500).JSON(fiber.Map{"error": err.Error()})
+			return
+		}
+		if date.Equal(dateDayBalance) {
+			date = date.AddDate(0, 0, 1)
+			continue
+		}
+		for {
+			if date.Equal(dateDayBalance) {
+				date = date.AddDate(0, 0, 1)
+				break
+			}
+			// Adding missing dates
+			fmt.Println(date)
+			//
+			if date.Equal(endDate) {
+				break
+			}
+			date = date.AddDate(0, 0, 1)
+		}
+	}
+	// Http response Balance Detailed
 	if strings.ToLower(c.Query("detail")) == "detailed" {
 		c.JSON(balance)
 		return
 	}
+	//
 
 	// if date != record.Date || index == itemsLength {
 	// 	if date != "" {

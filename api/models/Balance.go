@@ -41,8 +41,7 @@ type DayBalance struct {
 	Amount int32
 }
 
-func (b *Balance) PrepareStocks(tickers []string, stocksPrices []StockPrices) error {
-	// Removing empty stocks
+func (b *Balance) RemoveEmptyStocks() {
 	for i := 0; i < len(b.Stocks); i++ {
 		if b.Stocks[i].StocksAmount < 1 {
 			b.Stocks = append(b.Stocks[:i], b.Stocks[i+1:]...)
@@ -54,7 +53,9 @@ func (b *Balance) PrepareStocks(tickers []string, stocksPrices []StockPrices) er
 			}
 		}
 	}
-	// Assign price and calculate total amount
+}
+
+func (b *Balance) SetStocksPrices(stocksPrices []StockPrices) error {
 	for i := 0; i < len(b.Stocks); i++ {
 		for _, stockPrice := range stocksPrices {
 			if b.Stocks[i].Ticker == stockPrice.Ticker {
