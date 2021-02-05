@@ -105,6 +105,83 @@ func (b *Balance) PrepareCash(record Stock) {
 	}
 }
 
+func SetPrices(balance []Balance, stocksPrices []StockPrices) ([]Balance, error) {
+	balanceWithPrices := []Balance{}
+	for _, dayBalance := range balance {
+		err := dayBalance.SetStocksPrices(stocksPrices)
+		if err != nil {
+			return nil, err
+		}
+		balanceWithPrices = append(balanceWithPrices, dayBalance)
+	}
+	return balanceWithPrices, nil
+}
+
+func MakeBalance(items []Stock) []Balance {
+	itemsLength := len(items) - 1
+	balance := []Balance{}
+	dayBalance := Balance{}
+	for index, record := range items {
+		if dayBalance.Date != record.Date && index < itemsLength {
+			if dayBalance.Date != "" {
+				dayBalance.RemoveEmptyStocks()
+				balance = append(balance, Balance{Date: dayBalance.Date, Cash: dayBalance.Cash})
+				balance[len(balance)-1].Stocks = append(balance[len(balance)-1].Stocks, dayBalance.Stocks...)
+			}
+		}
+		dayBalance.PrepareCash(record)
+		if index == itemsLength {
+			dayBalance.RemoveEmptyStocks()
+			balance = append(balance, Balance{Date: dayBalance.Date, Cash: dayBalance.Cash})
+			balance[len(balance)-1].Stocks = append(balance[len(balance)-1].Stocks, dayBalance.Stocks...)
+		}
+	}
+	return balance
+}
+
+func FillMissedDays(balance []Balance) ([]Balance, error) {
+	date, err := time.Parse("2006-01-02", balance[0].Date)
+	if err != nil {
+		return nil, err
+	}
+	endDate := time.Now()
+	endDate = time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 0, 0, 0, 0, time.UTC)
+	itemsLength := len(balance)
+	balanceFilled := []Balance{}
+	for i := 0; date.Before(endDate); i++ {
+		dateDayBalance := time.Time{}
+		if i < itemsLength {
+			dateDayBalance, err = time.Parse("2006-01-02", balance[i].Date)
+		}
+		if err != nil {
+			return nil, err
+		}
+		if date.Equal(dateDayBalance) {
+			balanceFilled = append(balanceFilled, balance[i])
+			date = date.AddDate(0, 0, 1)
+			continue
+		}
+		for {
+			if date.Equal(dateDayBalance) {
+				balanceFilled = append(balanceFilled, balance[i])
+				date = date.AddDate(0, 0, 1)
+				break
+			}
+			// Adding missing dates
+			if i > itemsLength-1 {
+				i = itemsLength
+			}
+			balanceFilled = append(balanceFilled, Balance{Date: date.Format("2006-01-02"), Cash: balance[i-1].Cash, Stocks: balance[i-1].Stocks})
+			//
+			if date.Equal(endDate) {
+				break
+			}
+			date = date.AddDate(0, 0, 1)
+		}
+	}
+	return balanceFilled, nil
+}
+
 func FetchStocksPrices(tickers []string) ([]StockPrices, error) {
 	// Fetch Stocks Prices
 	stocksPrices := []StockPrices{}
