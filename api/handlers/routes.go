@@ -63,7 +63,8 @@ Get Stocks
 GET:/api/myfins/v%[1]v/stocks
 GET:/api/myfins/v%[1]v/stocks/:id
 GET:/api/myfins/v%[1]v/stocks/holdings
-GET:/api/myfins/v%[1]v/stocks/portfolio/daily`
+GET:/api/myfins/v%[1]v/stocks/portfolio/daily
+GET:/api/myfins/v%[1]v/stocks/portfolio/daily?detailed=true`
 
 	msg = fmt.Sprintf(msg, version)
 	c.SendString(msg)

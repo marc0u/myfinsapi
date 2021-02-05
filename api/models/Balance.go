@@ -24,21 +24,21 @@ type Price struct {
 }
 
 type StockBalance struct {
-	Ticker       string
-	StocksAmount int32
-	StockPrice   float64
-	TotalAmount  float64
+	Ticker       string  `json:"ticker"`
+	StocksAmount int32   `json:"stocks_amount"`
+	StockPrice   float64 `json:"stock_price"`
+	TotalAmount  float64 `json:"total_amount"`
 }
 
 type Balance struct {
-	Date   string
-	Cash   int32
-	Stocks []StockBalance
+	Date   string         `json:"date"`
+	Cash   int32          `json:"cash"`
+	Stocks []StockBalance `json:"stocks"`
 }
 
-type DayBalance struct {
-	Date   string
-	Amount int32
+type CompactDayBalance struct {
+	Date   string `json:"date"`
+	Amount int32  `json:"amount"`
 }
 
 func (b *Balance) RemoveEmptyStocks() {
@@ -53,23 +53,6 @@ func (b *Balance) RemoveEmptyStocks() {
 			}
 		}
 	}
-}
-
-func (b *Balance) SetStocksPrices(stocksPrices []StockPrices) error {
-	for i := 0; i < len(b.Stocks); i++ {
-		for _, stockPrice := range stocksPrices {
-			if b.Stocks[i].Ticker == stockPrice.Ticker {
-				price, err := FindStockPricesByDate(b.Date, stockPrice.Prices)
-				if err != nil {
-					return err
-				}
-				b.Stocks[i].StockPrice = price.Price
-				b.Stocks[i].TotalAmount = math.Floor(price.Price * float64(b.Stocks[i].StocksAmount))
-				break
-			}
-		}
-	}
-	return nil
 }
 
 func (b *Balance) PrepareCash(record Stock) {
@@ -105,16 +88,33 @@ func (b *Balance) PrepareCash(record Stock) {
 	}
 }
 
-func SetPrices(balance []Balance, stocksPrices []StockPrices) ([]Balance, error) {
-	balanceWithPrices := []Balance{}
-	for _, dayBalance := range balance {
-		err := dayBalance.SetStocksPrices(stocksPrices)
+func (b *Balance) FindStocksPrice(stocksPrices []StockPrices) error {
+	for i := 0; i < len(b.Stocks); i++ {
+		for _, stockPrice := range stocksPrices {
+			if b.Stocks[i].Ticker == stockPrice.Ticker {
+				price, err := FindStockPricesByDate(b.Date, stockPrice.Prices)
+				if err != nil {
+					return err
+				}
+				b.Stocks[i].StockPrice = price.Price
+				b.Stocks[i].TotalAmount = math.Floor(price.Price * float64(b.Stocks[i].StocksAmount))
+				break
+			}
+		}
+	}
+	return nil
+}
+
+func SetStocksPrices(balance []Balance, stocksPrices []StockPrices) ([]Balance, error) {
+	for i, dayBalance := range balance {
+		err := dayBalance.FindStocksPrice(stocksPrices)
 		if err != nil {
 			return nil, err
 		}
-		balanceWithPrices = append(balanceWithPrices, dayBalance)
+		balance[i].Stocks = []StockBalance{}
+		balance[i].Stocks = append(balance[i].Stocks, dayBalance.Stocks...)
 	}
-	return balanceWithPrices, nil
+	return balance, nil
 }
 
 func MakeBalance(items []Stock) []Balance {
@@ -137,6 +137,18 @@ func MakeBalance(items []Stock) []Balance {
 		}
 	}
 	return balance
+}
+
+func CompactBalance(balance []Balance) ([]CompactDayBalance, error) {
+	compactBalance := []CompactDayBalance{}
+	for _, dayBalance := range balance {
+		totalAmount := dayBalance.Cash
+		for _, stocks := range dayBalance.Stocks {
+			totalAmount = totalAmount + int32(stocks.TotalAmount)
+		}
+		compactBalance = append(compactBalance, CompactDayBalance{Date: dayBalance.Date, Amount: totalAmount})
+	}
+	return compactBalance, nil
 }
 
 func FillMissedDays(balance []Balance) ([]Balance, error) {

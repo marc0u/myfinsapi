@@ -192,16 +192,23 @@ func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
 		c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
-	balance, err = models.SetPrices(balance, stocksPrices)
+	balance, err = models.SetStocksPrices(balance, stocksPrices)
 	if err != nil {
 		c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
 	// Http response Balance Detailed
-	if strings.ToLower(c.Query("detail")) == "detailed" {
+	if strings.ToLower(c.Query("detailed")) == "true" {
 		c.JSON(balance)
 		return
 	}
+	// Process Compact Balance
+	compactBalance, err := models.CompactBalance(balance)
+	if err != nil {
+		c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		return
+	}
+	c.JSON(compactBalance)
 }
 
 func (server *Server) MirrorProductionTables() error {
