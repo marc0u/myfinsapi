@@ -1,5 +1,7 @@
 package utils
 
+import "strings"
+
 func RemoveDuplicateStrings(intSlice []string) []string {
 	keys := make(map[string]bool)
 	list := []string{}
@@ -14,4 +16,20 @@ func RemoveDuplicateStrings(intSlice []string) []string {
 		}
 	}
 	return list
+}
+
+func InSliceOfStrings(slice []string, val string, caseSensitive bool) (bool, int) {
+	for i, item := range slice {
+		if caseSensitive {
+			if item == val {
+				return true, i
+			}
+		} else {
+			if strings.ToLower(item) == strings.ToLower(val) {
+				return true, i
+			}
+		}
+
+	}
+	return false, -1
 }

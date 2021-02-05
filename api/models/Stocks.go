@@ -24,13 +24,14 @@ type Stock struct {
 }
 
 type StockHolding struct {
-	Date         string  `gorm:"not null" json:"date"`
-	Ticker       string  `gorm:"size:10" json:"ticker"`
-	StocksAmount int32   `json:"stocks_amount"`
-	StockPrice   float64 `json:"stock_price"`
-	TotalAmount  float64 `gorm:"not null" json:"total_amount"`
-	Country      string  `gorm:"not null; size:20" json:"country"`
-	Currency     string  `gorm:"not null; size:10" json:"currency"`
+	Date              string  `gorm:"not null" json:"date"`
+	Ticker            string  `gorm:"size:10" json:"ticker"`
+	StocksAmount      int32   `json:"stocks_amount"`
+	StockPrice        float64 `json:"stock_price"`
+	TotalAmount       float64 `gorm:"not null" json:"current_total_amount"`
+	BoughtTotalAmount float64 `gorm:"not null" json:"bought_total_amount"`
+	Country           string  `gorm:"not null; size:20" json:"country"`
+	Currency          string  `gorm:"not null; size:10" json:"currency"`
 }
 
 func (r *Stock) Prepare() {
@@ -52,7 +53,11 @@ func (r *Stock) Prepare() {
 		r.StockPrice = math.Round(math.Abs(r.TotalAmount/float64(r.StocksAmount))*100) / 100
 		return
 	}
-	r.Ticker = ""
+	if r.TransType == "DIVIDEND" {
+		r.Ticker = html.EscapeString(strings.ToUpper(strings.TrimSpace(r.Ticker)))
+	} else {
+		r.Ticker = ""
+	}
 	r.StocksAmount = 0
 	r.StockPrice = 0
 }
@@ -98,18 +103,26 @@ func (r *Stock) Validate() error {
 
 func (r *Stock) SaveAStock(db *gorm.DB) (*Stock, error) {
 	var err error
-	item := Stock{}
-	err = db.Model(&Stock{}).Last(&item).Error
-	if r.TransType == "BUY" || r.TransType == "WITHDRAWAL" {
-		r.Balance = item.Balance - r.TotalAmount
-	} else {
-		r.Balance = item.Balance + r.TotalAmount
+	lastItem := Stock{}
+	err = db.Model(&Stock{}).Order("date desc").Order("id desc").Last(&lastItem).Error
+	if err != nil && err.Error() != "record not found" {
+		return &Stock{}, err
 	}
+	r.SetBalance(lastItem)
 	err = db.Model(&Stock{}).Create(&r).Error
 	if err != nil {
 		return &Stock{}, err
 	}
 	return r, nil
+}
+
+func (r *Stock) SetBalance(lastItem Stock) {
+	switch r.TransType {
+	case "CREDIT", "DIVIDEND", "SELL":
+		r.Balance = lastItem.Balance + math.Abs(r.TotalAmount)
+	case "WITHDRAWAL", "BUY":
+		r.Balance = lastItem.Balance - math.Abs(r.TotalAmount)
+	}
 }
 
 func (r *Stock) UpdateAStock(db *gorm.DB, id uint64) (*Stock, error) {
@@ -190,7 +203,7 @@ func (r *Stock) FindStocksBetweenDates(db *gorm.DB, from string, to string) (*[]
 
 func (r *Stock) FindLastRecord(db *gorm.DB) (*Stock, error) {
 	var err error
-	err = db.Model(&Transaction{}).Last(&r).Error
+	err = db.Model(&Transaction{}).Order("date desc").Order("id desc").Last(&r).Error
 	if err != nil {
 		return &Stock{}, err
 	}
@@ -198,15 +211,28 @@ func (r *Stock) FindLastRecord(db *gorm.DB) (*Stock, error) {
 }
 
 func ReduceStocksAmount(stocks []Stock) StockHolding {
-	var stocksAmount int32
+	var stocksAmount float64
+	var totalAmount float64
 	for _, stock := range stocks {
-		stocksAmount = stocksAmount + stock.StocksAmount
+		if stock.TransType == "SELL" {
+			stocksAmount = stocksAmount - math.Abs(float64(stock.StocksAmount))
+			totalAmount = totalAmount - math.Abs(float64(stock.TotalAmount))
+		}
+		if stock.TransType == "BUY" {
+			stocksAmount = stocksAmount + math.Abs(float64(stock.StocksAmount))
+			totalAmount = totalAmount + math.Abs(float64(stock.TotalAmount))
+		}
+		if stock.StocksAmount < 1 {
+			totalAmount = 0
+			continue
+		}
 	}
 	return StockHolding{
-		Ticker:       stocks[0].Ticker,
-		StocksAmount: stocksAmount,
-		Country:      stocks[0].Country,
-		Currency:     stocks[0].Currency}
+		Ticker:            stocks[0].Ticker,
+		StocksAmount:      int32(stocksAmount),
+		BoughtTotalAmount: totalAmount,
+		Country:           stocks[0].Country,
+		Currency:          stocks[0].Currency}
 }
 
 // func (r *Stock) FindStocksHolings(db *gorm.DB) (*[]Stock, error) {

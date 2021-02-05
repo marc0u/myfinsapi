@@ -50,8 +50,8 @@ GET:/api/myfins/v%[1]v/transactions
 GET:/api/myfins/v%[1]v/transactions/last
 GET:/api/myfins/v%[1]v/transactions/month?change=-1
 GET:/api/myfins/v%[1]v/transactions/dates?from=YYYY-MM-DD&to=YYYY-MM-DD
-GET:/api/myfins/v%[1]v/transactions/summary?change=-1
-GET:/api/myfins/v%[1]v/transactions/summary/dates?from=YYYY-MM-DD&to=YYYY-MM-DD
+GET:/api/myfins/v%[1]v/transactions/summary?change=-1&exclusions=between,transfers
+GET:/api/myfins/v%[1]v/transactions/summary/dates?from=YYYY-MM-DD&to=YYYY-MM-DD&exclusions=between,transfers
 GET:/api/myfins/v%[1]v/transactions/:id
 
 Handle Stocks

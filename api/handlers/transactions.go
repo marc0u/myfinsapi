@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/marc0u/myfinsapi/api/models"
 	"github.com/marc0u/myfinsapi/api/utils"
@@ -181,8 +182,9 @@ func (server *Server) GetSummaryByMonth(c *fiber.Ctx) {
 		c.Status(404).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
+	exclusions := strings.Split(c.Query("exclusions"), ",")
 	// Http response
-	c.JSON(models.ProcessSummary(from, to, *itemsByDate, categories))
+	c.JSON(models.ProcessSummary(from, to, *itemsByDate, categories, exclusions))
 }
 
 func (server *Server) GetSummaryBetweenDates(c *fiber.Ctx) {
@@ -204,6 +206,7 @@ func (server *Server) GetSummaryBetweenDates(c *fiber.Ctx) {
 		c.Status(404).JSON(fiber.Map{"error": err.Error()})
 		return
 	}
+	exclusions := strings.Split(c.Query("exclusions"), ",")
 	// Http response
-	c.JSON(models.ProcessSummary(from, to, *itemsByDate, categories))
+	c.JSON(models.ProcessSummary(from, to, *itemsByDate, categories, exclusions))
 }

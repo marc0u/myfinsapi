@@ -203,9 +203,13 @@ func (r *Transaction) FindAllCategories(db *gorm.DB) ([]string, error) {
 	return utils.RemoveDuplicateStrings(result), nil
 }
 
-func ReduceAmountsByType(transactions []Transaction, transType string) int32 {
+func ReduceAmountsByType(transactions []Transaction, transType string, exclusions []string) int32 {
 	var total int32
 	for _, item := range transactions {
+		inExclusion, _ := utils.InSliceOfStrings(exclusions, item.Category, false)
+		if inExclusion {
+			continue
+		}
 		if item.Type == transType {
 			total = total + int32(math.Abs(float64(item.Amount)))
 		}
@@ -231,12 +235,12 @@ func ReduceAmountsByCategories(transactions []Transaction, categories []string) 
 	return categoriesSummary
 }
 
-func ProcessSummary(from string, to string, items []Transaction, categories []string) Summary {
+func ProcessSummary(from string, to string, items []Transaction, categories []string, exclusions []string) Summary {
 	summary := Summary{}
 	summary.StartDate = from
 	summary.EndDate = to
-	summary.Incomes = ReduceAmountsByType(items, "INCOME")
-	summary.Expenses = ReduceAmountsByType(items, "EXPENSE")
+	summary.Incomes = ReduceAmountsByType(items, "INCOME", exclusions)
+	summary.Expenses = ReduceAmountsByType(items, "EXPENSE", exclusions)
 	summary.CategoriesSummary = ReduceAmountsByCategories(items, categories)
 	summary.Transactions = items
 	return summary

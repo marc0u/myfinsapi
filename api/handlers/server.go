@@ -55,15 +55,13 @@ func (server *Server) InitializeDB(Dbdriver, DbUser, DbPassword, DbPort, DbHost,
 	if strings.ToLower(os.Getenv("DB_DEBUG")) == "true" {
 		server.DB = server.DB.Debug()
 	}
+	server.DB.AutoMigrate(&models.Transaction{}) //database migration
+	server.DB.AutoMigrate(&models.Stock{})       //database migration
 	if os.Getenv("DB_MIRROR") == "true" {
 		err := server.MirrorProductionTables()
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-	} else {
-		server.DB.AutoMigrate(&models.Transaction{}) //database migration
-		server.DB.AutoMigrate(&models.Stock{})       //database migration
-
 	}
 }
 
