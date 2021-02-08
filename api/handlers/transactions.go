@@ -87,8 +87,10 @@ func (server *Server) DeleteTransaction(c *fiber.Ctx) {
 
 func (server *Server) GetTransactions(c *fiber.Ctx) {
 	// Getting data
+	order := strings.Split(c.Query("order"), ",")
+	desc := strings.Split(c.Query("desc"), ",")
 	item := models.Transaction{}
-	items, err := item.FindAllTransactions(server.DB)
+	items, err := item.FindAllTransactions(server.DB, c.Query("limit"), order, desc)
 	if err != nil {
 		c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		return

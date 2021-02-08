@@ -4,6 +4,7 @@ import (
 	"errors"
 	"html"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/jinzhu/gorm"
@@ -142,10 +143,32 @@ func (t *Transaction) DeleteATransaction(db *gorm.DB, id uint64) (int64, error) 
 	return db.RowsAffected, nil
 }
 
-func (t *Transaction) FindAllTransactions(db *gorm.DB) (*[]Transaction, error) {
+func (t *Transaction) FindAllTransactions(db *gorm.DB, limit string, order []string, desc []string) (*[]Transaction, error) {
 	var err error
 	transactions := []Transaction{}
-	err = db.Model(&Transaction{}).Order("date desc").Order("id desc").Find(&transactions).Error
+	query := db.Model(&Transaction{})
+	if limit != "" {
+		limitInt, err := strconv.Atoi(limit)
+		if err != nil {
+			return &[]Transaction{}, err
+		}
+		query = query.Limit(limitInt)
+	}
+	if len(order) != 0 && order[0] != "" {
+		if len(order) != len(desc) {
+			return &[]Transaction{}, errors.New("'order' and 'desc' queries must have equal length")
+		}
+		for i := 0; i < len(order); i++ {
+			o := order[i]
+			if strings.ToLower(desc[i]) == "true" {
+				o = o + " " + "desc"
+			}
+			query = query.Order(o)
+		}
+	} else {
+		query = query.Order("date desc").Order("id desc")
+	}
+	err = query.Find(&transactions).Error
 	if err != nil {
 		return &[]Transaction{}, err
 	}
