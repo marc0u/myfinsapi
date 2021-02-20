@@ -40,13 +40,13 @@ func (server *Server) Help(c *fiber.Ctx) {
 	version := apiVersion[0:1]
 	var msg = `MyfinsAPI v%v
 	
-Handle Transations
+Handle Transactions
 POST:/api/myfins/v%[1]v/transactions
 PUT:/api/myfins/v%[1]v/transactions/:id
 DELETE:/api/myfins/v%[1]v/transactions/:id
 
 Get Transactions
-GET:/api/myfins/v%[1]v/transactions
+GET:/api/myfins/v%[1]v/transactions?limit=100&order=amount&desc=true
 GET:/api/myfins/v%[1]v/transactions/last
 GET:/api/myfins/v%[1]v/transactions/month?change=-1
 GET:/api/myfins/v%[1]v/transactions/dates?from=YYYY-MM-DD&to=YYYY-MM-DD
