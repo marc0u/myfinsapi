@@ -16,7 +16,7 @@ STDERR=/tmp/.$(PROJECTNAME)-stderr.txt
 #MAKEFLAGS += --silent
 
 run:
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go run myfinsapi.go
+	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go run $(PROJECTNAME).go
 ## install: Install missing dependencies. Runs `go get` internally. e.g; make install get=github.com/foo/bar
 install: go-get
 
