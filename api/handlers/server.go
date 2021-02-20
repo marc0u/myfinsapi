@@ -27,19 +27,19 @@ func (server *Server) InitializeDB(Dbdriver, DbUser, DbPassword, DbPort, DbHost,
 		DBURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", DbUser, DbPassword, DbHost, DbPort, DbName)
 		server.DB, err = gorm.Open(Dbdriver, DBURL)
 		if err != nil {
-			fmt.Printf("Cannot connect to %s database", Dbdriver)
+			fmt.Printf("Cannot connect to %s database\n", Dbdriver)
 			log.Fatal("This is the error:", err)
 		} else {
-			fmt.Printf("We are connected to the %s database", Dbdriver)
+			fmt.Printf("We are connected to the %s database\n", Dbdriver)
 		}
 	case "postgres":
 		DBURL := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", DbHost, DbPort, DbUser, DbName, DbPassword)
 		server.DB, err = gorm.Open(Dbdriver, DBURL)
 		if err != nil {
-			fmt.Printf("Cannot connect to %s database", Dbdriver)
+			fmt.Printf("Cannot connect to %s database\n", Dbdriver)
 			log.Fatal("This is the error:", err)
 		} else {
-			fmt.Printf("We are connected to the %s database", Dbdriver)
+			fmt.Printf("We are connected to the %s database\n", Dbdriver)
 		}
 	case "sqlite3":
 		//DBURL := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", DbHost, DbPort, DbUser, DbName, DbPassword)

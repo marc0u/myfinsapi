@@ -5,7 +5,7 @@ PROJECTNAME=$(shell basename "$(PWD)")
 # Go related variables.
 GOBASE=$(shell pwd)
 # GOPATH="$(GOBASE)/vendor:$(GOBASE)"
-GOPATH=/c/Users/marco/go/
+# GOPATH=/c/Users/marco/go/
 GOBIN=$(GOBASE)/bin
 GOFILES=$(wildcard *.go)
 
