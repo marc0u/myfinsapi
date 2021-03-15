@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gofiber/cors"
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"    //mysql database driver
 	_ "github.com/jinzhu/gorm/dialects/postgres" //postgres database driver

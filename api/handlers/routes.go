@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"fmt"
-
-	"github.com/gofiber/fiber"
+	"os"
+	"time"
+	"github.com/gofiber/fiber/v2"
+	"github.com/go-resty/resty/v2"
 )
 
 var apiVersion string
@@ -11,8 +13,12 @@ var apiVersion string
 func (s *Server) initializeRoutes(version string) {
 	apiVersion = version
 	version = version[0:1]
+	// Notify
+	s.Router.Get("/notify", s.Notify)
+	// Google Login
+	s.Router.Use("/api",GoogleLogin)
 	// Help
-	s.Router.Get("/help", s.Help)
+	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/help", version), s.Help)
 	// Handle Transactions
 	s.Router.Post(fmt.Sprintf("/api/myfins/v%v/transactions", version), s.CreateTransaction)
 	s.Router.Put(fmt.Sprintf("/api/myfins/v%v/transactions/:id", version), s.UpdateTransaction)
@@ -36,7 +42,7 @@ func (s *Server) initializeRoutes(version string) {
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks/:id", version), s.GetStockByID)
 }
 
-func (server *Server) Help(c *fiber.Ctx) {
+func (server *Server) Help(c *fiber.Ctx) error {
 	version := apiVersion[0:1]
 	var msg = `MyfinsAPI v%v
 	
@@ -67,5 +73,22 @@ GET:/api/myfins/v%[1]v/stocks/portfolio/daily
 GET:/api/myfins/v%[1]v/stocks/portfolio/daily?detailed=true`
 
 	msg = fmt.Sprintf(msg, version)
-	c.SendString(msg)
+	return c.SendString(msg)
+}
+
+func (server *Server) Notify(c *fiber.Ctx) error {
+	if c.Query("name") == "" || c.Query("email") == "" {
+		return nil
+	}
+	msg := fmt.Sprintf("%s (%s) is trying to sign-in on Myfins-Web", c.Query("name"),c.Query("email") )
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage?text=%s&chat_id=%s", os.Getenv("TB_ID"), msg, "165270556")
+	client := resty.New()
+	client.
+		SetRetryCount(3).
+		SetRetryWaitTime(3 * time.Second).
+		SetRetryMaxWaitTime(5 * time.Second).
+		SetTimeout(10 * time.Second).
+		R().
+		Get(url)
+	return nil
 }

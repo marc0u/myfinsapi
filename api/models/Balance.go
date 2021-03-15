@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-resty/resty"
+	"github.com/go-resty/resty/v2"
 )
 
 type StockPrices struct {

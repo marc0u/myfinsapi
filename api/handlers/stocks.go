@@ -10,128 +10,115 @@ import (
 
 	"github.com/marc0u/myfinsapi/api/models"
 
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 
-	"github.com/go-resty/resty"
+	"github.com/go-resty/resty/v2"
 )
 
-func (server *Server) CreateStock(c *fiber.Ctx) {
+func (server *Server) CreateStock(c *fiber.Ctx) error {
 	// Reading body http request
 	item := models.Stock{}
 	err := c.BodyParser(&item)
 	if err != nil {
-		c.Status(400).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Preparing and validating data
 	item.Prepare()
 	err = item.Validate()
 	if err != nil {
-		c.Status(400).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Saving data
 	itemCreated, err := item.SaveAStock(server.DB)
 	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Http response
-	c.Status(201).JSON(itemCreated)
+	return c.Status(201).JSON(itemCreated)
 }
 
-func (server *Server) UpdateStock(c *fiber.Ctx) {
+func (server *Server) UpdateStock(c *fiber.Ctx) error {
 	// Getting URL parameter ID
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(400).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Reading body http request
 	item := models.Stock{}
 	err = c.BodyParser(&item)
 	if err != nil {
-		c.Status(400).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Preparing and validating data
 	item.Prepare()
 	err = item.Validate()
 	if err != nil {
-		c.Status(400).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Saving data
 	itemUpdated, err := item.UpdateAStock(server.DB, id)
 	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Http response
 	itemUpdated.ID = uint32(id)
-	c.JSON(itemUpdated)
+	return c.JSON(itemUpdated)
 }
 
-func (server *Server) DeleteStock(c *fiber.Ctx) {
+func (server *Server) DeleteStock(c *fiber.Ctx) error {
 	// Getting URL parameter ID
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(400).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Deleting data
 	item := models.Stock{}
 	_, err = item.DeleteAStock(server.DB, id)
 	if err != nil {
-		c.Status(404).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(404).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Http response
 	c.Status(204)
+	return nil
 }
 
-func (server *Server) GetStocks(c *fiber.Ctx) {
+func (server *Server) GetStocks(c *fiber.Ctx) error {
 	// Getting data
 	item := models.Stock{}
 	items, err := item.FindAllStocks(server.DB, c.Query("desc"))
 	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Http response
-	c.JSON(items)
+	return c.JSON(items)
 }
 
-func (server *Server) GetStockByID(c *fiber.Ctx) {
+func (server *Server) GetStockByID(c *fiber.Ctx) error {
 	// Getting URL parameter ID
 	id, err := strconv.ParseUint(c.Params("id"), 10, 64)
 	if err != nil {
-		c.Status(400).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Getting data
 	item := models.Stock{}
 	itemByID, err := item.FindStockByID(server.DB, id)
 	if err != nil {
-		c.Status(404).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(404).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Http response
-	c.JSON(itemByID)
+	return c.JSON(itemByID)
 }
 
-func (server *Server) GetHoldings(c *fiber.Ctx) {
+func (server *Server) GetHoldings(c *fiber.Ctx) error {
 	// Getting data
 	item := models.Stock{}
 	tickers, err := item.FindTickers(server.DB)
 	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	balance, err := item.FindLastRecord(server.DB)
 	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	items := []models.StockHolding{}
 	items = append(items, models.StockHolding{
@@ -144,15 +131,13 @@ func (server *Server) GetHoldings(c *fiber.Ctx) {
 	for _, ticker := range tickers {
 		result, err := item.FindStocksByTicker(server.DB, ticker)
 		if err != nil {
-			c.Status(500).JSON(fiber.Map{"error": err.Error()})
-			return
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
 		holding := models.ReduceStocksAmount(*result)
 		if holding.StocksAmount > 0 {
 			prices, err := models.FetchDailyPrices(ticker)
 			if err != nil {
-				c.Status(500).JSON(fiber.Map{"error": err.Error()})
-				return
+				return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 			}
 			lastPrice := prices[len(prices)-1]
 			holding.Date = lastPrice.Date
@@ -162,53 +147,46 @@ func (server *Server) GetHoldings(c *fiber.Ctx) {
 		}
 	}
 	// Http response
-	c.JSON(items)
+	return c.JSON(items)
 }
 
-func (server *Server) GetPortfolioDaily(c *fiber.Ctx) {
+func (server *Server) GetPortfolioDaily(c *fiber.Ctx) error {
 	// Getting Portfolio Tickers
 	item := models.Stock{}
 	tickers, err := item.FindTickers(server.DB)
 	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Fetch Stocks Prices
 	stocksPrices, err := models.FetchStocksPrices(tickers)
 	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Get Stocks records
 	items, err := item.FindAllStocks(server.DB, "false")
 	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Process Detailed Balance
 	balance := models.MakeBalance(*items)
 	balance, err = models.FillMissedDays(balance)
 	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	balance, err = models.SetStocksPrices(balance, stocksPrices)
 	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	// Http response Balance Detailed
 	if strings.ToLower(c.Query("detailed")) == "true" {
-		c.JSON(balance)
-		return
+		return c.JSON(balance)
 	}
 	// Process Compact Balance
 	compactBalance, err := models.CompactBalance(balance)
 	if err != nil {
-		c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		return
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
-	c.JSON(compactBalance)
+	return c.JSON(compactBalance)
 }
 
 func (server *Server) MirrorProductionTables() error {
