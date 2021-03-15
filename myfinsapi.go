@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/marc0u/myfinsapi/api/handlers"
@@ -18,13 +19,12 @@ func init() {
 }
 
 func main() {
-	apiVersion := "2.2.0"
+	apiVersion := "2.3.0"
 	var err error
 	var cmdStr string
 	if len(os.Args) > 1 {
 		if os.Args[1] == "install" {
 			fmt.Println("> Removing previous version...")
-			exec.Command("/bin/sh", "-c", "docker stop myfinsapi").Run()
 			exec.Command("/bin/sh", "-c", "docker container rm myfinsapi").Run()
 			fmt.Printf("> Installing MyfinsAPI v%s on Docker.\n", apiVersion)
 			cmdStr = fmt.Sprintf(`docker run -d \
@@ -33,9 +33,8 @@ func main() {
 		--restart=unless-stopped \
 		-v $PWD:/app \
 		-e TZ=America/Santiago \
-		-e EXP_PORT=%[1]v \
 		-p %[1]v:%[1]v \
-		marc0u/go-launcher:0.0.1 /app/myfinsapi`, os.Getenv("API_PORT"))
+		marc0u/go-launcher /app/myfinsapi`, strings.Replace(os.Getenv("API_PORT"), ":", "", 1))
 			err = exec.Command("/bin/sh", "-c", cmdStr).Run()
 			if err != nil {
 				log.Fatalf("Docker couldn't be installed. Error code: %s", err)
