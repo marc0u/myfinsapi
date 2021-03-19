@@ -13,6 +13,10 @@ func (server *Server) Help(c *fiber.Ctx) error {
 	version := apiVersion[0:1]
 	var msg = `MyfinsAPI v%v
 	
+Auth
+POST:/login
+GET:/notify?name=XXXX&email=XXXX
+
 Handle Transactions
 POST:/api/myfins/v%[1]v/transactions
 PUT:/api/myfins/v%[1]v/transactions/:id
@@ -38,9 +42,6 @@ GET:/api/myfins/v%[1]v/stocks/:id
 GET:/api/myfins/v%[1]v/stocks/holdings
 GET:/api/myfins/v%[1]v/stocks/portfolio/daily
 GET:/api/myfins/v%[1]v/stocks/portfolio/daily?detailed=true
-
-Helpers
-GET:/notify?name=XXXX&email=XXXX
 `
 
 	msg = fmt.Sprintf(msg, version)
