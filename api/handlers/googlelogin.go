@@ -1,16 +1,16 @@
 package handlers
 
 import (
-	"fmt"
-	"errors"
-	"time"
-	"os"
-	"strings"
-	"net/http"
-	"io/ioutil"
 	"encoding/json"
-	"github.com/gofiber/fiber/v2"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gofiber/fiber/v2"
 )
 
 // GoogleClaims -
@@ -22,21 +22,23 @@ type GoogleClaims struct {
 	jwt.StandardClaims
 }
 
-func GoogleLogin(c *fiber.Ctx) error {
-	// Validate the JWT is valid
-	if c.Get("Authorization") == "" {
-		return c.Status(403).JSON(fiber.Map{"error":"Authorization not found"})
-	} 
-	claims, err := ValidateGoogleJWT(strings.Split(c.Get("Authorization"), " ")[1])
+func (server *Server) GoogleLogin(c *fiber.Ctx) error {
+	// Validate Google JWT
+	claims, err := validateGoogleJWT(c.FormValue("token"))
 	if err != nil {
-		return c.Status(403).JSON(fiber.Map{"error": err.Error(), "message": "Invalid google auth"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error(), "message": "Invalid google auth"})
 	}
 	if claims.Email != "marco.urriola@gmail.com" || claims.StandardClaims.Subject != "105528794879915282379" {
-		return c.Status(403).JSON(fiber.Map{"message": "Unauthorized"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 	}
-	// Go to next middleware:
-	return c.Next()
-  }
+	// Create token JWT
+	expireAt := time.Hour * 27 * 7
+	token, err := createToken(claims.StandardClaims.Subject, expireAt)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"token": token})
+}
 
 func getGooglePublicKey(keyID string) (string, error) {
 	resp, err := http.Get("https://www.googleapis.com/oauth2/v1/certs")
@@ -59,8 +61,7 @@ func getGooglePublicKey(keyID string) (string, error) {
 	return key, nil
 }
 
-// ValidateGoogleJWT -
-func ValidateGoogleJWT(tokenString string) (GoogleClaims, error) {
+func validateGoogleJWT(tokenString string) (GoogleClaims, error) {
 	claimsStruct := GoogleClaims{}
 	token, err := jwt.ParseWithClaims(
 		tokenString,
@@ -99,4 +100,19 @@ func ValidateGoogleJWT(tokenString string) (GoogleClaims, error) {
 	}
 
 	return *claims, nil
+}
+
+func createToken(userId string, expireAt time.Duration) (string, error) {
+	atClaims := jwt.MapClaims{
+		"iss": "Myfins",
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Add(expireAt).Unix(),
+		"sub": userId,
+	}
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	token, err := at.SignedString([]byte(os.Getenv("API_JWT_SECRET")))
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }

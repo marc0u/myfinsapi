@@ -5,3 +5,4 @@ Icon*
 myfinsapi
 myfinsapi-*
 bin/
+.env

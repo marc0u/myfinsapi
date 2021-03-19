@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"    //mysql database driver
@@ -65,9 +64,9 @@ func (server *Server) InitializeDB(Dbdriver, DbUser, DbPassword, DbPort, DbHost,
 	}
 }
 
-func (server *Server) RunServer(addr, version string) {
-	server.Router = fiber.New()
-	server.Router.Use(cors.New())
-	server.initializeRoutes(version)
-	log.Fatal(server.Router.Listen(addr))
+func (s *Server) RunServer(addr, version string) {
+	s.Router = fiber.New()
+	s.initializeMiddlewares()
+	s.initializeRoutes(version)
+	log.Fatal(s.Router.Listen(addr))
 }
