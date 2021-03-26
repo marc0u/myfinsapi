@@ -4,8 +4,6 @@ PROJECTNAME=$(shell basename "$(PWD)")
 
 # Go related variables.
 GOBASE=$(shell pwd)
-# GOPATH="$(GOBASE)/vendor:$(GOBASE)"
-# GOPATH=/c/Users/marco/go/
 GOBIN=$(GOBASE)/bin
 GOFILES=$(wildcard *.go)
 
@@ -16,7 +14,7 @@ STDERR=/tmp/.$(PROJECTNAME)-stderr.txt
 #MAKEFLAGS += --silent
 
 run:
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go run $(PROJECTNAME).go
+	go run $(PROJECTNAME).go
 ## install: Install missing dependencies. Runs `go get` internally. e.g; make install get=github.com/foo/bar
 install: go-get
 
@@ -29,7 +27,7 @@ compile:
 
 ## exec: Run given command, wrapped with custom GOPATH. e.g; make exec run="go test ./..."
 exec:
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) $(run)
+	@GOBIN=$(GOBIN) $(run)
 
 ## clean: Clean build files. Runs `go clean` internally.
 clean:
@@ -39,22 +37,22 @@ go-compile: go-clean go-get go-build
 
 go-build:
 	@echo "  >  Building binary..."
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) GOOS=linux GOARCH=amd64 GOARM=7 go build -o $(GOBIN)/$(PROJECTNAME) $(GOFILES)
+	@GOBIN=$(GOBIN) GOOS=linux GOARCH=amd64 GOARM=7 go build -o $(GOBIN)/$(PROJECTNAME) $(GOFILES)
 
 go-generate:
 	@echo "  >  Generating dependency files..."
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go generate $(generate)
+	@GOBIN=$(GOBIN) go generate $(generate)
 
 go-get:
 	@echo "  >  Checking if there is any missing dependencies..."
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go get $(get)
+	@GOBIN=$(GOBIN) go get $(get)
 
 go-install:
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go install $(GOFILES)
+	@GOBIN=$(GOBIN) go install $(GOFILES)
 
 go-clean:
 	@echo "  >  Cleaning build cache"
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go clean
+	@GOBIN=$(GOBIN) go clean
 
 .PHONY: help
 all: help

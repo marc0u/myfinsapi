@@ -18,7 +18,7 @@ func init() {
 }
 
 func main() {
-	const apiVersion = "2.3.0"
+	const apiVersion = "2.4.0"
 	if len(os.Args) > 1 {
 		if os.Args[1] == "install" {
 			utils.InstallOnDocker(apiVersion)

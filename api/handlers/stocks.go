@@ -3,7 +3,6 @@ package handlers
 import (
 	"crypto/tls"
 	"encoding/json"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +13,10 @@ import (
 
 	"github.com/go-resty/resty/v2"
 )
+
+func (server *Server) GetStack(c *fiber.Ctx) error {
+	return c.JSON(server.Router.Stack())
+}
 
 func (server *Server) CreateStock(c *fiber.Ctx) error {
 	// Reading body http request
@@ -112,42 +115,32 @@ func (server *Server) GetStockByID(c *fiber.Ctx) error {
 func (server *Server) GetHoldings(c *fiber.Ctx) error {
 	// Getting data
 	item := models.Stock{}
-	tickers, err := item.FindTickers(server.DB)
+	holdings, err := item.FindHoldings(server.DB)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
-	balance, err := item.FindLastRecord(server.DB)
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-	}
-	items := []models.StockHolding{}
-	items = append(items, models.StockHolding{
-		Date:        balance.Date,
-		Ticker:      "CASH",
-		TotalAmount: balance.Balance,
-		Country:     balance.Country,
-		Currency:    balance.Currency,
-	})
-	for _, ticker := range tickers {
-		result, err := item.FindStocksByTicker(server.DB, ticker)
-		if err != nil {
-			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-		}
-		holding := models.ReduceStocksAmount(*result)
-		if holding.StocksAmount > 0 {
-			prices, err := models.FetchDailyPrices(ticker)
-			if err != nil {
-				return c.Status(500).JSON(fiber.Map{"error": err.Error()})
-			}
-			lastPrice := prices[len(prices)-1]
-			holding.Date = lastPrice.Date
-			holding.StockPrice = lastPrice.Price
-			holding.TotalAmount = math.Round(float64(holding.StocksAmount)*holding.StockPrice*100) / 100
-			items = append(items, holding)
-		}
 	}
 	// Http response
-	return c.JSON(items)
+	return c.JSON(holdings)
+}
+
+func (server *Server) GetSummary(c *fiber.Ctx) error {
+	item := models.Stock{}
+	credit, err := item.FindStocksByTransType(server.DB, "CREDIT")
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	withdrawal, err := item.FindStocksByTransType(server.DB, "WITHDRAWAL")
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	holdings, err := item.FindHoldings(server.DB)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	totalAssets := models.ReduceHoldings(holdings)
+	totalInvested := models.ReduceTotalAmount(*credit) - models.ReduceTotalAmount(*withdrawal)
+	totalGained := totalAssets - totalInvested
+	return c.JSON(fiber.Map{"total_assets": totalAssets, "total_invested": totalInvested, "total_gained": totalGained})
 }
 
 func (server *Server) GetPortfolioDaily(c *fiber.Ctx) error {

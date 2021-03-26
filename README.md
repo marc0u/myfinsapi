@@ -1,6 +1,10 @@
-# MyfinsAPI v2.2.0  
+# MyfinsAPI v2.4.0  
 
 ## Endpoints
+
+### Helpers
+GET:/api/help<br />
+GET:/api/stack _**NEW!**_<br />
 
 ### Auth
 POST:/login<br />
@@ -12,12 +16,12 @@ PUT:/api/myfins/v2/transactions/:id<br />
 DELETE:/api/myfins/v2/transactions/:id<br />
 
 ### Get Transactions
-GET:/api/myfins/v2/transactions?limit=100&order=amount&desc=true _**UPDATED!**_<br />
+GET:/api/myfins/v2/transactions?limit=100&order=amount&desc=true<br />
 GET:/api/myfins/v2/transactions/last<br />
 GET:/api/myfins/v2/transactions/month?change=-1<br />
 GET:/api/myfins/v2/transactions/dates?from=YYYY-MM-DD&to=YYYY-MM-DD<br />
-GET:/api/myfins/v2/transactions/summary?change=-1&exclusions=between,transfers _**UPDATED!**_<br />
-GET:/api/myfins/v2/transactions/summary/dates?from=YYYY-MM-DD&to=YYYY-MM-DD&exclusions=between,transfers _**UPDATED!**_<br />
+GET:/api/myfins/v2/transactions/summary?change=-1&exclusions=between,transfers<br />
+GET:/api/myfins/v2/transactions/summary/dates?from=YYYY-MM-DD&to=YYYY-MM-DD&exclusions=between,transfers<br />
 GET:/api/myfins/v2/transactions/:id<br />
 
 ### Handle Stocks
@@ -29,8 +33,9 @@ DELETE:/api/myfins/v2/stocks/:id<br />
 GET:/api/myfins/v2/stocks<br />
 GET:/api/myfins/v2/stocks/:id<br />
 GET:/api/myfins/v2/stocks/holdings<br /> 
-GET:/api/myfins/v2/stocks/portfolio/daily _**NEW!**_<br />
-GET:/api/myfins/v2/stocks/portfolio/daily?detailed=true` _**NEW!**_<br />
+GET:/api/myfins/v2/stocks/summary _**NEW!**_<br /> 
+GET:/api/myfins/v2/stocks/portfolio/daily <br />
+GET:/api/myfins/v2/stocks/portfolio/daily?detailed=true` <br />
 
 ## Evironment Variables
 

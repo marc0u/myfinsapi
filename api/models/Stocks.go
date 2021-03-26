@@ -178,6 +178,16 @@ func (r *Stock) FindStocksByTicker(db *gorm.DB, ticker string) (*[]Stock, error)
 	return &stocks, nil
 }
 
+func (r *Stock) FindStocksByTransType(db *gorm.DB, trans_type string) (*[]Stock, error) {
+	var err error
+	stocks := []Stock{}
+	err = db.Model(&Stock{}).Where("trans_type = ?", trans_type).Find(&stocks).Error
+	if err != nil {
+		return &[]Stock{}, err
+	}
+	return &stocks, nil
+}
+
 func (r *Stock) FindTickers(db *gorm.DB) ([]string, error) {
 	var err error
 	stocks := []Stock{}
@@ -210,6 +220,44 @@ func (r *Stock) FindLastRecord(db *gorm.DB) (*Stock, error) {
 	return r, nil
 }
 
+func (r *Stock) FindHoldings(db *gorm.DB) ([]StockHolding, error) {
+	tickers, err := r.FindTickers(db)
+	if err != nil {
+		return nil, err
+	}
+	balance, err := r.FindLastRecord(db)
+	if err != nil {
+		return nil, err
+	}
+	stocksHolding := []StockHolding{}
+	stocksHolding = append(stocksHolding, StockHolding{
+		Date:        balance.Date,
+		Ticker:      "CASH",
+		TotalAmount: balance.Balance,
+		Country:     balance.Country,
+		Currency:    balance.Currency,
+	})
+	for _, ticker := range tickers {
+		result, err := r.FindStocksByTicker(db, ticker)
+		if err != nil {
+			return nil, err
+		}
+		holding := ReduceStocksAmount(*result)
+		if holding.StocksAmount > 0 {
+			prices, err := FetchDailyPrices(ticker)
+			if err != nil {
+				return nil, err
+			}
+			lastPrice := prices[len(prices)-1]
+			holding.Date = lastPrice.Date
+			holding.StockPrice = lastPrice.Price
+			holding.TotalAmount = math.Round(float64(holding.StocksAmount)*holding.StockPrice*100) / 100
+			stocksHolding = append(stocksHolding, holding)
+		}
+	}
+	return stocksHolding, nil
+}
+
 func ReduceStocksAmount(stocks []Stock) StockHolding {
 	var stocksAmount float64
 	var totalAmount float64
@@ -235,12 +283,18 @@ func ReduceStocksAmount(stocks []Stock) StockHolding {
 		Currency:          stocks[0].Currency}
 }
 
-// func (r *Stock) FindStocksHolings(db *gorm.DB) (*[]Stock, error) {
-// 	var err error
-// 	stocks := []Stock{}
-// 	err = db.Model(&Stock{}).Order("date").Not("ticker = ?", "").Find(&stocks).Error
-// 	if err != nil {
-// 		return &[]Stock{}, err
-// 	}
-// 	return &stocks, nil
-// }
+func ReduceTotalAmount(stocks []Stock) float64 {
+	var totalAmount float64
+	for _, stock := range stocks {
+		totalAmount += stock.TotalAmount
+	}
+	return totalAmount
+}
+
+func ReduceHoldings(holdings []StockHolding) float64 {
+	var totalHoldings float64
+	for _, holding := range holdings {
+		totalHoldings += holding.TotalAmount
+	}
+	return totalHoldings
+}

@@ -15,6 +15,7 @@ func (s *Server) initializeRoutes(version string) {
 	s.Router.Post("/login", s.GoogleLogin)
 	// Help
 	s.Router.Get("/api/help", s.Help)
+	s.Router.Get("/api/stack", s.GetStack)
 	// Handle Transactions
 	s.Router.Post(fmt.Sprintf("/api/myfins/v%v/transactions", version), s.CreateTransaction)
 	s.Router.Put(fmt.Sprintf("/api/myfins/v%v/transactions/:id", version), s.UpdateTransaction)
@@ -34,6 +35,7 @@ func (s *Server) initializeRoutes(version string) {
 	// GET My Stocks
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks", version), s.GetStocks)
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks/holdings", version), s.GetHoldings)
+	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks/summary", version), s.GetSummary)
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks/portfolio/daily", version), s.GetPortfolioDaily)
 	s.Router.Get(fmt.Sprintf("/api/myfins/v%v/stocks/:id", version), s.GetStockByID)
 }
