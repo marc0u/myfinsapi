@@ -19,10 +19,8 @@ func init() {
 
 func main() {
 	const apiVersion = "2.4.0"
-	if len(os.Args) > 1 {
-		if os.Args[1] == "install" {
-			utils.InstallOnDocker(apiVersion)
-		}
+	if len(os.Args) > 1 && os.Args[1] == "install" {
+		utils.InstallOnDocker(apiVersion)
 	} else {
 		fmt.Printf("---------- MyfinsAPI v%s ----------\n", apiVersion)
 		var server = handlers.Server{}

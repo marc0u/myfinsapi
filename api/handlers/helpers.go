@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/marc0u/myfinsapi/api/models"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/fiber/v2"
@@ -67,5 +71,51 @@ func (server *Server) Notify(c *fiber.Ctx) error {
 		SetTimeout(10 * time.Second).
 		R().
 		Get(url)
+	return nil
+}
+
+func (server *Server) MirrorProductionTables() error {
+	trans := []models.Transaction{}
+	stocks := []models.Stock{}
+	urlTrans := "http://192.168.1.15:7001/api/myfins/v2/transactions"
+	urlStocks := "http://192.168.1.15:7001/api/myfins/v2/stocks"
+	client := resty.New().SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}).SetRetryCount(3).SetRetryWaitTime(3 * time.Second).SetRetryMaxWaitTime(5 * time.Second).SetTimeout(10 * time.Second)
+	client.SetAuthToken(os.Getenv("API_CLIENT_TOKEN"))
+	resp, err := client.R().Get(urlTrans)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(resp.Body(), &trans)
+	if err != nil {
+		return err
+	}
+	resp, err = client.R().Get(urlStocks)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(resp.Body(), &stocks)
+	if err != nil {
+		return err
+	}
+	for i, j := 0, len(trans)-1; i < j; i, j = i+1, j-1 {
+		trans[i], trans[j] = trans[j], trans[i]
+	}
+	for _, item := range trans {
+		// Saving data
+		_, err := item.SaveTransaction(server.DB)
+		if err != nil {
+			return err
+		}
+	}
+	for i, j := 0, len(stocks)-1; i < j; i, j = i+1, j-1 {
+		stocks[i], stocks[j] = stocks[j], stocks[i]
+	}
+	for _, item := range stocks {
+		// Saving data
+		_, err := item.SaveAStock(server.DB)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

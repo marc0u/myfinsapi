@@ -26,28 +26,28 @@ func (server *Server) InitializeDB(Dbdriver, DbUser, DbPassword, DbPort, DbHost,
 		DBURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", DbUser, DbPassword, DbHost, DbPort, DbName)
 		server.DB, err = gorm.Open(Dbdriver, DBURL)
 		if err != nil {
-			fmt.Printf("Cannot connect to %s database\n", Dbdriver)
-			log.Fatal("This is the error:", err)
+			fmt.Printf("  !  Cannot connect to %s database\n", Dbdriver)
+			log.Fatal("  !  This is the error:", err)
 		} else {
-			fmt.Printf("We are connected to the %s database\n", Dbdriver)
+			fmt.Printf("  >  We are connected to the %s database\n", Dbdriver)
 		}
 	case "postgres":
 		DBURL := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", DbHost, DbPort, DbUser, DbName, DbPassword)
 		server.DB, err = gorm.Open(Dbdriver, DBURL)
 		if err != nil {
-			fmt.Printf("Cannot connect to %s database\n", Dbdriver)
-			log.Fatal("This is the error:", err)
+			fmt.Printf("  !  Cannot connect to %s database\n", Dbdriver)
+			log.Fatal("  !  This is the error:", err)
 		} else {
-			fmt.Printf("We are connected to the %s database\n", Dbdriver)
+			fmt.Printf("  >  We are connected to the %s database\n", Dbdriver)
 		}
 	case "sqlite3":
 		//DBURL := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", DbHost, DbPort, DbUser, DbName, DbPassword)
 		server.DB, err = gorm.Open(Dbdriver, DbName)
 		if err != nil {
-			fmt.Printf("Cannot connect to %s database\n", Dbdriver)
-			log.Fatal("This is the error:", err)
+			fmt.Printf("  !  Cannot connect to %s database\n", Dbdriver)
+			log.Fatal("  !  This is the error:", err)
 		} else {
-			fmt.Printf("We are connected to the %s database\n", Dbdriver)
+			fmt.Printf("  >  We are connected to the %s database\n", Dbdriver)
 		}
 		server.DB.Exec("PRAGMA foreign_keys = ON")
 	}
@@ -56,11 +56,15 @@ func (server *Server) InitializeDB(Dbdriver, DbUser, DbPassword, DbPort, DbHost,
 	}
 	server.DB.AutoMigrate(&models.Transaction{}) //database migration
 	server.DB.AutoMigrate(&models.Stock{})       //database migration
-	if os.Getenv("DB_MIRROR") == "true" {
+	if len(os.Args) > 1 && os.Args[1] == "mirror" {
+		fmt.Println("  >  Mirroring online tables...")
 		err := server.MirrorProductionTables()
 		if err != nil {
+			fmt.Println("  !  Error Mirroring databases.")
 			fmt.Println(err.Error())
+			os.Exit(1)
 		}
+		fmt.Println("  >  Tables Mirrored successfuly.")
 	}
 }
 

@@ -13,10 +13,14 @@ STDERR=/tmp/.$(PROJECTNAME)-stderr.txt
 # Make is verbose in Linux. Make it silent.
 #MAKEFLAGS += --silent
 
+## run: Run the main file.
 run:
+	@echo "  >  Running $(PROJECTNAME).go..."
 	go run $(PROJECTNAME).go
 ## install: Install missing dependencies. Runs `go get` internally. e.g; make install get=github.com/foo/bar
-install: go-get
+install:
+	@echo "  >  Installing dependencies..."
+	go-get
 
 ## compile: Compile the binary.
 compile:
